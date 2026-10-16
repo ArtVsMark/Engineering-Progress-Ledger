@@ -21,6 +21,9 @@ snapshots/
 
 | Дата | Источник | Отчёт |
 |---|---|---|
-| 2026-10-09 | анализ в Perplexity (шестой снимок с 02.09) | [report.html](snapshots/2026-10-09/report.html) |
-
-Снимки 02.09–02.10 в журнал пока не внесены.
+| 2026-09-02 | анализ в Perplexity (первый снимок) | [report.html](snapshots/2026-09-02/report.html) |
+| 2026-09-08 | анализ в Perplexity (второй снимок) | [report.html](snapshots/2026-09-08/report.html) |
+| 2026-09-15 | анализ в Perplexity (третий снимок) | [report.html](snapshots/2026-09-15/report.html) |
+| 2026-09-22 | анализ в Perplexity (четвёртый снимок) | [report.html](snapshots/2026-09-22/report.html) |
+| 2026-10-02 | анализ в Perplexity (пятый снимок) | [report.html](snapshots/2026-10-02/report.html) |
+| 2026-10-09 | анализ в Perplexity (шестой снимок) | [report.html](snapshots/2026-10-09/report.html) |
