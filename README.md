@@ -23,10 +23,7 @@ snapshots/
 |---|---|---|
 | 2026-09-02 | анализ в Perplexity (первый снимок) | [report.html](snapshots/2026-09-02/report.html) |
 | 2026-09-08 | анализ в Perplexity (второй снимок) | [report.html](snapshots/2026-09-08/report.html) |
+| 2026-09-15 | анализ в Perplexity (третий снимок) | [report.html](snapshots/2026-09-15/report.html) |
 | 2026-09-22 | анализ в Perplexity (четвёртый снимок) | [report.html](snapshots/2026-09-22/report.html) |
 | 2026-10-02 | анализ в Perplexity (пятый снимок) | [report.html](snapshots/2026-10-02/report.html) |
 | 2026-10-09 | анализ в Perplexity (шестой снимок) | [report.html](snapshots/2026-10-09/report.html) |
-
-Не найден: 2026-09-15 (третий снимок). На него ссылается таблица динамики
-снимка 2026-09-22, поэтому его числа частично восстановимы оттуда — но как
-пересказ, а не как сам снимок.
