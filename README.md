@@ -28,3 +28,4 @@ snapshots/
 | 2026-10-02 | анализ в Perplexity (пятый снимок) | [report.html](snapshots/2026-10-02/report.html) |
 | 2026-10-09 | анализ в Perplexity (шестой снимок) | [report.html](snapshots/2026-10-09/report.html) |
 | 2026-10-16 | анализ в Perplexity (седьмой снимок) | [report.html](snapshots/2026-10-16/report.html) |
+| 2026-10-23 | анализ в Perplexity (восьмой снимок) | [report.html](snapshots/2026-10-23/report.html) |
