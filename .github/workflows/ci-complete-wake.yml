@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+# Будильник сводного гейта: `ci` завершился — устаревшая сводка перезапускается.
+#
+# РЕШЕНИЕ ВЛАДЕЛЬЦА 04.10.2026 (#1007, вариант 2). Под очередью площадки
+# `ci-complete` краснел сроком «соседи не завершились» при зелёной голове и сам
+# не пересобирался. Срок остаётся коротким, а вердикт приходит, когда соседи
+# действительно кончились: их завершение и будит сводку.
+#
+# ПЕРЕЗАПУСК, А НЕ СВОЯ ЗАПИСЬ. Записи прогона по `workflow_run` площадка
+# вешает на голову общей ветки, и защита ветки их не увидит. Поэтому здесь
+# нет вердикта: прогон перезапускает сам `ci-complete`, и тот выносит вердикт
+# на своём событии изменения. Логика и её граница — `scripts/ci_complete_wake.py`,
+# исполняет её общий шаг `step-ci-complete-wake.yml` кодом поставщика.
+#
+# ЗАКРЕПЛЕНИЕ (152). `workflow_run` исполняет определение с общей ветки, а код
+# шаг берёт своим checkout на коммите вызова — у нас это та же общая ветка,
+# у потребителя — тег поставщика. Код изменения здесь не исполняется вовсе —
+# у прогона право перезапуска, и чужой код с ним был бы обходом 085.
+name: ci-complete-wake
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+  # У события всегда есть ручная кнопка: события теряются (правило 104).
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: голова изменения, чью сводку разбудить
+        required: true
+
+permissions:
+  contents: read
+  # Перезапуск прогона сводки — право `actions: write`, и только оно.
+  actions: write
+
+concurrency:
+  # Одна голова — один будильник: два завершения `ci` подряд позвали бы два
+  # перезапуска одной сводки, каждый не увидев другого (149).
+  group: ci-complete-wake-${{ github.event.workflow_run.head_sha || inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  ci-complete-wake:
+    # Сводка живёт только на изменении: прогон `ci` на общей ветке будить нечего.
+    # Отменённый `ci` — это новый толчок, отменивший прежний заход: голова
+    # мертва, а её сводку перезапускать незачем (взгляд на #1110).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion != 'cancelled')
+    # ТОНКИЙ ВЫЗОВ (#1385): перезапуск — общим шагом `step-ci-complete-wake.yml`,
+    # а событие, очередь и условие — здесь. Имя записи проверки составное:
+    # `ci-complete-wake / ci-complete-wake`.
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-ci-complete-wake.yml@v1.13.0
+    with:
+      sha: ${{ inputs.sha || '' }}

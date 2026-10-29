@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+# Шаг 12: заход по расписанию случился — или не случился, и это видно.
+#
+# ПЛОЩАДКА НЕ ОБЕЩАЕТ `schedule`. Потерянный запуск снаружи неотличим от
+# ненаступившего часа: он нигде не краснеет, потому что краснеть нечему.
+# Упавший заход краснеет — но на вкладке прогонов, а вкладка адресатом не
+# является: её открывают, уже заподозрив (104, 169).
+#
+# САМ СЕБЯ ЭТОТ ЗАХОД НЕ СТОРОЖИТ, и это названо, а не умолчано. Он идёт по
+# СОБЫТИЮ, а не по расписанию, и в объявлении расписаний его нет — иначе
+# сторожа пришлось бы сторожить вторым сторожем, а второй счёт того же
+# расходится с первым молча (022).
+#
+# ПО ОБЩЕЙ ВЕТКЕ, А НЕ ПО ИЗМЕНЕНИЮ. Предмет — история прогонов репозитория,
+# и на голове изменения его нет вовсе.
+name: schedules-seen
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+  # У события всегда есть ручная кнопка: события теряются (правило 104).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Реестр пропусков — задача, и ведёт её механизм.
+  issues: write
+  actions: read
+
+concurrency:
+  # Один заход на репозиторий: реестр — общий ресурс, и у него один владелец
+  # (149).
+  group: schedules-seen
+  cancel-in-progress: false
+
+jobs:
+  # ТОНКИЙ ВЫЗОВ (#1385): обход — общим шагом `step-schedules-seen.yml`, а
+  # события, очередь и условие «только общая ветка» — здесь. Имя записи
+  # проверки составное: `schedules-seen / schedules-seen`.
+  schedules-seen:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_branch == 'main'
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-schedules-seen.yml@v1.13.0

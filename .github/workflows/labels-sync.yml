@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+# Метки репозитория из `.github/labels.yml`.
+#
+# Правило 064: метка — вход механизма, а не украшение. Значит её состав живёт
+# файлом в дереве и применяется прогоном, а не заводится в интерфейсе.
+#
+# Токен нужен обычный: метка не несёт личности человека, и правила 131 и 135
+# здесь ни при чём.
+name: labels-sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/labels.yml"
+      - "scripts/sync_labels.py"
+      - ".github/workflows/step-labels-sync.yml"
+      - ".github/workflows/labels-sync.yml"
+  # У события всегда есть ручная кнопка: события теряются (правило 104).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  # Голова названа в группе, а не только имя прогона (правило 179): иначе
+  # последнее слово останется за прогоном на устаревшем коммите.
+  group: labels-sync-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  # ТОНКИЙ ВЫЗОВ (#1385): применение — общим шагом `step-labels-sync.yml`, а
+  # события и очередь — здесь. Имя записи проверки составное: `apply / apply`.
+  apply:
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-labels-sync.yml@v1.13.0

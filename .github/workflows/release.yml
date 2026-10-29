@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+# Выпуск: собрать журнал, поднять версию контракта, поставить тег.
+#
+# ТОЛЬКО КНОПКОЙ, И ЭТО НЕ ОСТОРОЖНОСТЬ, А УСТРОЙСТВО. Тег не переставляется:
+# шаг, который нельзя отменить, получает собственную проверку ПЕРЕД собой (074),
+# а решение «выпускать» принимает человек. Событие, запускающее выпуск само,
+# сделало бы выпуском каждое слияние.
+#
+# ПРОВЕРКА ИДЁТ ДВАЖДЫ, И ВТОРОЙ РАЗ — НА ПЛОЩАДКЕ. Механизм отказывает по
+# списку причин сразу, а не по первой попавшейся: выпуск делают редко, и чинить
+# его по одной причине за заход дороже, чем увидеть все.
+#
+# ТОКЕН ВЛАДЕЛЬЦА, А НЕ ПРОГОНА. Выпуск несёт личность человека так же, как
+# слияние: на токене прогона автором тега и коммита стало бы приложение, и
+# переписать это потом нечем (131, 135).
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "номер выпуска; пусто — следующий по правилу"
+        required: false
+        type: string
+      acceptance:
+        description: "номер задачи-приёмки: мажор поднимает её ЗАКРЫТИЕ, а не выпуск"
+        required: false
+        type: string
+      apply:
+        description: "сделать необратимое: собрать, пометить тегом и отправить"
+        required: false
+        default: false
+        type: boolean
+      # НЕСОВМЕСТИМОСТЬ ОБЪЯВЛЯЕТ ЧЕЛОВЕК: род фрагмента `contract` говорит
+      # «поверхность тронута» и только, а гейт связи смотрит дифф ИЗМЕНЕНИЯ,
+      # которого у выпуска уже нет — к этому моменту слито много изменений.
+      breaking:
+        description: "поверхность изменена НЕСОВМЕСТИМО: поднимает мажор версии контракта"
+        required: false
+        default: false
+        type: boolean
+      tail:
+        description: "довести хвост выпуска: тег v<version> уже стоит — страница, подъём своих шагов, снятие метки"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  # Состояние приёмки мажора читается у площадки: механизм не верит ключу на
+  # слово. Право только на чтение — выпуск ничего в задачах не меняет.
+  issues: read
+
+concurrency:
+  # Выпуск один на репозиторий, и вытеснять его нечем: два захода поставили бы
+  # два тега на разные головы.
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  # ТОНКИЙ ВЫЗОВ (#1385): выпуск — общим шагом `step-release.yml`, кнопка и её
+  # входы — здесь. Имя записи проверки составное: `release / release`.
+  release:
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-release.yml@v1.13.0
+    with:
+      version: ${{ inputs.version }}
+      acceptance: ${{ inputs.acceptance }}
+      apply: ${{ inputs.apply }}
+      breaking: ${{ inputs.breaking }}
+      tail: ${{ inputs.tail }}
+    secrets:
+      MERGE_QUEUE_TOKEN: ${{ secrets.MERGE_QUEUE_TOKEN }}

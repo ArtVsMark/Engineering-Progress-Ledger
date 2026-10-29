@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+# Ревью по обращению: агент запускается упоминанием в задаче или комментарии.
+#
+# ЭТО ДРУГОЙ МЕХАНИЗМ, А НЕ РЕЖИМ РЕВЬЮ. У авто-ревью (review.yml) вход — свой
+# код на своём изменении. Здесь вход — ТЕКСТ, написанный кем угодно в интернете,
+# а агент запускается токеном владельца. Разные поверхности атаки нельзя держать
+# в одном файле, даже если действие одно и то же.
+#
+# УПОМИНАНИЯ МАЛО. Триггеры `issues` и `issue_comment` открыты всем: без
+# требования к автору любой посторонний заводит задачу, жжёт квоту владельца, и
+# текст задачи идёт прямо в промпт агента. К упоминанию добавлено требование
+# `author_association` из закрытого списка — это список РАЗРЕШЁННОГО (068), а
+# проставляет его сама площадка по факту прав, и подделать его содержимым
+# задачи нельзя.
+name: claude
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened, assigned]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  id-token: write
+  # Нужно, чтобы агент мог прочитать исход проверок на изменении.
+  actions: read
+
+concurrency:
+  # Обращений на одной задаче может быть несколько подряд; предыдущее не должно
+  # дописывать ответ к уже отвеченному. Голову назвать нечем — обращение
+  # приходит к задаче, а не к коммиту, — поэтому группу задаёт номер обсуждения.
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  respond:
+    if: >-
+      (github.event_name == 'issue_comment' &&
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment' &&
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review' &&
+        contains(github.event.review.body, '@claude') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association)) ||
+      (github.event_name == 'issues' &&
+        (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association))
+    # ТОНКИЙ ВЫЗОВ (#1385): ответ — общим шагом `step-claude.yml`, а события,
+    # очередь и «кто вправе обратиться» — здесь. Имя записи составное:
+    # `respond / respond`.
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-claude.yml@v1.13.0
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

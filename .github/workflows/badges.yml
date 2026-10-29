@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+# Заготовка собрана `scripts/onboard.py` поставщика из его `badges.yml`:
+# только джобы вызова общего шага. Свои джобы поставщика не едут —
+# входы вызова (`with:`) — данные, правьте их под свой проект.
+# Не едут входы, которые называют снятое (артефакт или выход
+# снятого джоба): facts.inputs-artifact.
+name: badges
+'on':
+  push:
+    branches:
+    - main
+  workflow_run:
+    workflows:
+    - ci
+    - python-next
+    types:
+    - completed
+    branches:
+    - main
+  workflow_dispatch:
+    inputs:
+      reread:
+        description: перечитать снятия учтённых изменений из истории main (#820)
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+concurrency:
+  group: badges
+  cancel-in-progress: false
+jobs:
+  facts:
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-facts.yml@v1.13.0
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
+      issues: read
+    with:
+      ci-workflow: ci.yml
+      python-matrix: ci.yml:test-matrix
+      python-next: python-next.yml:test-next
+      archive: true
+      archive-reread: ${{ inputs.reread == true }}
+    if: github.event_name != 'workflow_run' || contains(fromJSON('["push", "workflow_dispatch",
+      "schedule"]'), github.event.workflow_run.event)

@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+schema: 4
+contract: ">=0.14,<0.15"
+
+checks:
+  "attribution / attribution": unreviewed
+  "debt / debt": unreviewed
+  "journal / journal": unreviewed
+  "lint / lint": unreviewed
+  "pipeline / pipeline": unreviewed
+  "pr-meta / pr-meta": unreviewed
+  "rulebook-fresh / rulebook-fresh": unreviewed
+  "window-lifetime / window-lifetime": unreviewed
+  "automerge / automerge": unreviewed
+  "review / map": unreviewed
+  "review / review": unreviewed
+  "review / findings": unreviewed
+  "review / sweep": unreviewed
+  "review / verify": unreviewed
+  "review / late-queue": unreviewed
+  "review / late-look": unreviewed
+  "record / skills": unreviewed
+  "digest / skills": unreviewed
+  "task-items / task-items": unreviewed
+beyond_the_change:
+  "agent-pr / agent-pr": unreviewed
+  "attribution-history / attribution-history": unreviewed
+  "ci-complete-wake / ci-complete-wake": unreviewed
+  "respond / respond": unreviewed
+  "intercept / intercept": unreviewed
+  "drift / drift": unreviewed
+  "facts / facts": unreviewed
+  "hail / hail": unreviewed
+  "apply / apply": unreviewed
+  "main-red / main-red": unreviewed
+  "test-next / test-next": unreviewed
+  "release / release": unreviewed
+  "compare / compare": unreviewed
+  "runs-series / runs-series": unreviewed
+  "schedules-seen / schedules-seen": unreviewed
+  "stuck-prs / stuck-prs": unreviewed
+  "verify-queue / verify-queue": unreviewed
+  "work-plan / work-plan": unreviewed
+
+# Что механизм поставщика сделал у вас не так — записью, а не прозой в трекере
+# (навык `tell-the-supplier`, форма — договор поставщика, раздел `feedback:`).
+# feedback:
+#   version: 1
+#   records:
+#     - slug: <устойчивое-имя>
+#       mechanism: <step-…, scripts/….py или .claude/…>
+#       version: <тег выпуска поставщика, vX.Y.Z>
+#       kind: <false-refusal | false-pass | not-run | partial | rework | bypass>
+#       measured: <что видно и сколько раз>
+#       trace: <владелец/репозиторий#N — ваша задача>
+#       supplier: <владелец/репозиторий — только если механизм не этого поставщика>
