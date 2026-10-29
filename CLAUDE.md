@@ -42,9 +42,11 @@
 каталогу, а не по этой строке
 ([005](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/005-hand-written-numbers-rot.md)).
 
-**Навыки и хуки окна — копии поставщика, их не правят.** Копию держит
-[`.claude/kit-laid.json`](.claude/kit-laid.json): правленая отказывает
-обновлению `onboard.py --update`. Недоработку пишут поставщику навыком
+**Навыки и хуки окна — копии поставщика, их не правят.** Копия — путь,
+названный в [`.claude/kit-laid.json`](.claude/kit-laid.json): правленая
+отказывает обновлению `onboard.py --update`. Хук старта
+`.claude/hooks/session-start.sh` там не назван: после первой кладки он свой,
+и окружение окна собирается в его слоте. Недоработку пишут поставщику навыком
 `tell-the-supplier`. Свой навык кладут рядом, под своим именем.
 
 **Скрипты механизмов зовутся запускателем** `bash .claude/mechanisms.sh
