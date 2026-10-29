@@ -97,3 +97,58 @@ jobs:
       checks: read
       pull-requests: read
       issues: read
+
+  # --- свои джобы журнала ----------------------------------------------------
+  # Ниже — проверки предмета журнала, а не процесса: держит их сам журнал, а не
+  # поставщик. Класс каждой — в `.pipeline.yml`, как и у общих шагов.
+
+  snapshots:
+    # СНИМКИ ТОЛЬКО ДОПИСЫВАЮТСЯ (README, «В журнал только дописывают»).
+    # Вышедший снимок не правится и не удаляется: ошибку в нём исправляет
+    # следующий снимок, иначе нельзя отличить, изменился мир или способ счёта.
+    # Тот же приём у семьи для решений — их замещают, а не правят
+    # ([043](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/043-decisions-are-superseded-not-edited.md)).
+    #
+    # ПРЕДИКАТ — «всё, кроме добавления». `--diff-filter=a` отбирает любой
+    # статус, кроме A: правку, удаление, смену типа. `--no-renames` раскладывает
+    # переименование на удаление старого пути и добавление нового, и удаление
+    # ловится тем же фильтром. Снимок, добавленный этим же изменением, до слияния
+    # править можно: относительно базы он всё ещё добавлен.
+    #
+    # ЗАМЕР 29.10.2026 по истории `main`: из 5 слитых изменений 4 трогали
+    # `snapshots/`, все 8 файлов только добавлялись, нарушений 0. Гейт —
+    # страж от возврата, а не починка; что он краснеет, показан откатом в
+    # изменении, которое его завело
+    # ([075](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/075-a-guard-that-finds-nothing-must-fail.md)).
+    #
+    # СПРОСИЛИ СЕМЬЮ
+    # ([162](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/162-a-gap-asks-the-neighbours-first.md))
+    # 29.10.2026: в выкачке поставщика v1.13.0 готового шага нет — его гейты
+    # судят прирост (`check_rule_birth.py`, `check_journal.py`), а не
+    # неизменность прежнего. Каталог и соседей из этого окна не читали.
+    #
+    # ФОРМУ СНИМКА джоб пока не сверяет: схемы ещё нет (#5). Сверка станет
+    # здесь вторым шагом.
+    name: snapshots
+    if: github.event_name != 'push'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # База нужна с историей: `...` ищет общего предка с ней.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: вышедшие снимки не тронуты
+        run: |
+          set -euo pipefail
+          base="${GITHUB_BASE_REF:-main}"
+          touched=$(git diff --name-status --no-renames --diff-filter=a "origin/$base...HEAD" -- snapshots/)
+          if [ -n "$touched" ]; then
+            echo "::error title=snapshots::вышедший снимок правится или удаляется — в журнал только дописывают, ошибку исправляет следующий снимок"
+            printf '%s\n' "$touched"
+            exit 1
+          fi
+          echo "вышедшие снимки не тронуты"
