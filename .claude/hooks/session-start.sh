@@ -49,7 +49,7 @@ unset want  # не из окружения окна: число только и�
 # `python3` ниже планки — `SyntaxError` (PEP 758). Предполётная зовёт блоки
 # шагов голым `python` из папки интерпретатора `PYTHON`, и где там `python`
 # другой версии (`/usr/local/bin/python3.14` рядом с системным `python`), те же
-# `SyntaxError` (поставщик, EPM #1767). Поэтому окружение — venv: в его `bin/`
+# `SyntaxError` (поставщик, ArtVsMark/Engineering-Pipeline-Mechanisms#1767). Поэтому окружение — venv: в его `bin/`
 # `python` и `python3` той же планки. `PATH` отдаёт его окну, `PYTHON` —
 # запускателю.
 #
