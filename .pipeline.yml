@@ -94,6 +94,12 @@ feedback:
       kind: rework
       measured: "запускатель `.claude/mechanisms.sh` требует от интерпретатора планки `pyyaml`, а установка ставит `python3.14` без него: в облачном окне журнала 29.10.2026 `bash .claude/mechanisms.sh paths.py roles` падает `ModuleNotFoundError: yaml`, с системным `python3` 3.13 — `SyntaxError` (PEP 758); журнал собрал окружение планки с `pyyaml` слотом своего `session-start.sh`; у поставщика — ArtVsMark/Engineering-Pipeline-Mechanisms#1771"
       trace: ArtVsMark/Engineering-Progress-Ledger#20
+    - slug: version-file-collision
+      mechanism: scripts/pipeline_checks.py
+      version: v1.13.0
+      kind: false-refusal
+      measured: "`contract_of` берёт `CONTRACT_VERSION` из дерева потребителя, когда поставщик не опознан, — а в сводной проверке `ci-complete` он не опознаётся; журнал завёл `CONTRACT_VERSION` 0.1.0 своим номером выпуска (EPL #32), и `ci-complete` покраснел: «контракт механизмов 0.1.0 вне объявленного диапазона >=0.14,<0.15»; путь `paths.VERSION` таблицей `paths:` не переназначается, а шаг выпуска ведёт номер именно в нём — своего номера у потребителя с выпусками сейчас нет"
+      trace: ArtVsMark/Engineering-Progress-Ledger#23
     - slug: preflight-bare-python
       mechanism: scripts/preflight.py
       version: v1.13.0

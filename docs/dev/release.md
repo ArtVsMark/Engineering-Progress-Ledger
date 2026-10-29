@@ -3,9 +3,17 @@
 > **Читатель:** тот, кто выпускает журнал, и тот, кто читает его по выпускам.
 
 Номер журнала устроен так же, как у механизмов поставщика: `МАЖОР.МИНОР.ПАТЧ`.
-Источник номера один — файл [`CONTRACT_VERSION`](../../CONTRACT_VERSION); руками
-номер нигде больше не пишется
+Источник номера один — **тег выпуска** `vМАЖОР.МИНОР.ПАТЧ`; первый — `v0.1.0`.
+В прозе номер руками не пишется
 ([035](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/035-version-is-never-edited-by-hand.md)).
+
+**Файла `CONTRACT_VERSION` у журнала нет — и не должно быть, пока механизмы
+читают его как версию СВОЕГО контракта.** Сводная проверка `ci-complete` берёт
+этот файл из дерева потребителя и сверяет с окном `contract:` в
+`.pipeline.yml`: номер журнала там читался бы номером механизмов, и проверка
+краснеет. Развести два номера — дело поставщика
+(ArtVsMark/Engineering-Pipeline-Mechanisms, запись `feedback:
+version-file-collision` в `.pipeline.yml`).
 
 ## Что двигает разряд
 
@@ -27,4 +35,5 @@
 ([030](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/030-changelog-from-fragments.md));
 форма фрагмента — [`changelog.d/README.md`](../../changelog.d/README.md). Выпуск
 идёт прогоном [`release`](../../.github/workflows/release.yml) кнопкой: он
-поднимает номер, собирает `CHANGELOG.md` и ставит тег.
+собирает `CHANGELOG.md` и ставит тег. Шаг выпуска поставщика ведёт номер в
+`CONTRACT_VERSION`, поэтому первый выпуск ждёт, пока поставщик разведёт номера.
