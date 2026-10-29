@@ -1,0 +1,374 @@
+{
+  "_": "Ряд прогонов конвейера: день → прогон → числа. Ведёт scripts/runs_series.py.",
+  "window_days": 90,
+  "recount_days": 3,
+  "updated": "2026-10-29T16:03:18+00:00",
+  "days": {
+    "2026-10-29": {
+      "runs": {
+        "claude": {
+          "runs": 32,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 84,
+          "timed": 32,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify-queue": {
+          "runs": 69,
+          "red": 0,
+          "cancelled": 6,
+          "seconds": 1410,
+          "timed": 69,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "main-red": {
+          "runs": 81,
+          "red": 0,
+          "cancelled": 17,
+          "seconds": 823,
+          "timed": 81,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "work-plan": {
+          "runs": 70,
+          "red": 2,
+          "cancelled": 20,
+          "seconds": 1988,
+          "timed": 70,
+          "red_jobs": {
+            "work-plan / work-plan": 2
+          },
+          "red_steps": {
+            "work-plan / work-plan · отказ сборки плана виден": 2
+          },
+          "red_marks": {},
+          "red_whose": {
+            "свой": 2
+          }
+        },
+        "schedules-seen": {
+          "runs": 54,
+          "red": 0,
+          "cancelled": 1,
+          "seconds": 233,
+          "timed": 54,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "hail": {
+          "runs": 54,
+          "red": 0,
+          "cancelled": 13,
+          "seconds": 1320,
+          "timed": 54,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "ci-complete-wake": {
+          "runs": 54,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 381,
+          "timed": 54,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "stuck": {
+          "runs": 54,
+          "red": 0,
+          "cancelled": 11,
+          "seconds": 1498,
+          "timed": 54,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "automerge": {
+          "runs": 111,
+          "red": 0,
+          "cancelled": 59,
+          "seconds": 2481,
+          "timed": 111,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "ci": {
+          "runs": 60,
+          "red": 21,
+          "cancelled": 39,
+          "seconds": 1165,
+          "timed": 60,
+          "red_jobs": {
+            "journal / journal": 16,
+            "lint / lint": 21
+          },
+          "red_steps": {
+            "journal / journal · фрагмент журнала": 16,
+            "lint / lint · типы": 21
+          },
+          "red_marks": {},
+          "red_whose": {
+            "свой": 37
+          }
+        },
+        "ci-complete": {
+          "runs": 54,
+          "red": 0,
+          "cancelled": 41,
+          "seconds": 1396,
+          "timed": 54,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "agent-pr": {
+          "runs": 12,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 253,
+          "timed": 12,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "review": {
+          "runs": 5,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 972,
+          "timed": 5,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "badges": {
+          "runs": 15,
+          "red": 15,
+          "cancelled": 0,
+          "seconds": 341,
+          "timed": 15,
+          "red_jobs": {
+            "facts / facts": 15
+          },
+          "red_steps": {
+            "facts / facts · сверить факты с договором семьи": 15
+          },
+          "red_marks": {},
+          "red_whose": {
+            "свой": 15
+          }
+        },
+        "skills": {
+          "runs": 5,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 96,
+          "timed": 5,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "task-items": {
+          "runs": 5,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 189,
+          "timed": 5,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "python-next": {
+          "runs": 5,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 82,
+          "timed": 5,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "attribution-history": {
+          "runs": 5,
+          "red": 1,
+          "cancelled": 0,
+          "seconds": 85,
+          "timed": 5,
+          "red_jobs": {
+            "attribution-history / attribution-history": 1
+          },
+          "red_steps": {
+            "attribution-history / attribution-history · сверить атрибуцию первопредков": 1
+          },
+          "red_marks": {},
+          "red_whose": {
+            "свой": 1
+          }
+        },
+        "Данные общих шагов: `.gitignore` журнала и записи поставщику (+2)": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 165,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "labels-sync": {
+          "runs": 2,
+          "red": 1,
+          "cancelled": 0,
+          "seconds": 49,
+          "timed": 2,
+          "red_jobs": {
+            "apply / apply": 1
+          },
+          "red_steps": {
+            "apply / apply · применить объявленный состав": 1
+          },
+          "red_marks": {},
+          "red_whose": {
+            "свой": 1
+          }
+        },
+        "Данные общих шагов: `.gitignore` журнала и записи поставщику (+1)": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 251,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "Зоны журнала: снимки, данные, страница и ведение журнала": {
+          "runs": 2,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 365,
+          "timed": 2,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "Данные общих шагов: `.gitignore` журнала и записи поставщику": {
+          "runs": 2,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 330,
+          "timed": 2,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "Порядок работы журнала: `docs/agent/behaviour.md` (+1)": {
+          "runs": 2,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 400,
+          "timed": 2,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "Снимки только дописываются: свой гейт журнала `snapshots`": {
+          "runs": 2,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 447,
+          "timed": 2,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify 4a625dc": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 78,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify 13e8771": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 1,
+          "seconds": 5,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify 08affa7": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 27,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "github_actions in /. - Update #1663260777": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 160,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "Конвейер механизмов подключён заготовкой захода v1.13.0 (+1)": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 123,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        }
+      }
+    }
+  }
+}
