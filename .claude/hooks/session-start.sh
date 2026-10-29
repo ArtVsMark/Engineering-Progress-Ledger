@@ -42,4 +42,29 @@ unset want  # не из окружения окна: число только и�
 . "$here/install_floor.sh"
 
 # --- слот проекта: окружение проверки вашего дерева ---
+# СВОЕГО КОДА У ЖУРНАЛА НЕТ, окружение проверки — механизмы поставщика: их
+# запускатель (`.claude/mechanisms.sh`) и предполётная. Им нужен `python$want`
+# С `pyyaml`, а предполётная зовёт блоки шагов ещё и голым `python`. Замер окна
+# 29.10.2026: интерпретатор планки стоит без `pyyaml`, `python` — системный
+# ниже планки, и предполётная даёт ложное красное `SyntaxError` (PEP 758).
+#
+# ОКРУЖЕНИЕ — ВНЕ ДЕРЕВА, в кеше окна: `.gitignore` у журнала нет, и `.venv` в
+# корне лёг бы в изменение. Его `bin/` несёт `python` и `python3` планки —
+# отдельной прокладки не нужно. Собирается заново, если версия не та или нет
+# `pyyaml`.
+env_dir="${XDG_CACHE_HOME:-$HOME/.cache}/epl-floor-env"
+ready() {
+  [ -x "$env_dir/bin/python" ] || return 1
+  "$env_dir/bin/python" -c 'import sys, yaml; print("%d.%d" % sys.version_info[:2])' 2>/dev/null | grep -qxF "$want"
+}
+if ! ready; then
+  rm -rf "$env_dir"
+  { "python$want" -m venv "$env_dir" && "$env_dir/bin/pip" install -q pyyaml; } \
+    || { warn "окружение механизмов на $want с pyyaml не собрано"; exit 0; }
+fi
+[ -n "${CLAUDE_ENV_FILE:-}" ] || { warn "нет CLAUDE_ENV_FILE — окружение собрано, но командам окна не отдано"; exit 0; }
+{
+  echo "export PATH=\"$env_dir/bin:\$PATH\""
+  echo "export PYTHON=python"
+} >> "$CLAUDE_ENV_FILE"
 exit 0

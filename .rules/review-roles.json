@@ -4,11 +4,63 @@
   "schema": 1,
   "required": [
     "тестировщик",
+    "ревизор",
     "правила каталога"
   ],
   "ignored": {
     "paths": [],
     "except": []
   },
-  "by_path": []
+  "by_path": [
+    {
+      "paths": [
+        "snapshots/*"
+      ],
+      "roles": [
+        "критик метода",
+        "аналитик данных",
+        "приватность"
+      ]
+    },
+    {
+      "paths": [
+        "README.md"
+      ],
+      "roles": [
+        "приватность",
+        "техписатель"
+      ]
+    },
+    {
+      "paths": [
+        "*.md",
+        "docs/*"
+      ],
+      "roles": [
+        "техписатель"
+      ]
+    },
+    {
+      "paths": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/agent/*",
+        "docs/dev/*"
+      ],
+      "roles": [
+        "архитектор"
+      ]
+    },
+    {
+      "paths": [
+        ".pipeline.yml",
+        ".github/*",
+        ".claude/*",
+        ".rules/*"
+      ],
+      "roles": [
+        "потребитель механизмов"
+      ]
+    }
+  ]
 }
