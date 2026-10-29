@@ -92,7 +92,7 @@ feedback:
       mechanism: .claude/hooks/install_floor.sh
       version: v1.13.0
       kind: rework
-      measured: "запускатель `.claude/mechanisms.sh` требует от интерпретатора планки `pyyaml`, а установка ставит `python3.14` без него: в облачном окне журнала 29.10.2026 `bash .claude/mechanisms.sh paths.py roles` падает `ModuleNotFoundError: yaml`, с системным `python3` 3.13 — `SyntaxError` (PEP 758); журнал собрал окружение планки с `pyyaml` слотом своего `session-start.sh`"
+      measured: "запускатель `.claude/mechanisms.sh` требует от интерпретатора планки `pyyaml`, а установка ставит `python3.14` без него: в облачном окне журнала 29.10.2026 `bash .claude/mechanisms.sh paths.py roles` падает `ModuleNotFoundError: yaml`, с системным `python3` 3.13 — `SyntaxError` (PEP 758); журнал собрал окружение планки с `pyyaml` слотом своего `session-start.sh`; у поставщика — EPM #1771"
       trace: ArtVsMark/Engineering-Progress-Ledger#20
     - slug: preflight-bare-python
       mechanism: scripts/preflight.py
