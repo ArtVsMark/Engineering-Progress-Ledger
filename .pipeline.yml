@@ -104,5 +104,5 @@ feedback:
       mechanism: scripts/onboard.py
       version: v1.13.0
       kind: rework
-      measured: "хук `skill_log.sh` пишет `.claude/state/skill-runs.jsonl`, по своей докстроке — под `.gitignore`, а заход подключения `.gitignore` не кладёт: после первого вызова навыка в дереве журнала появился неотслеживаемый файл, и стоп-хук окна требовал его закоммитить; журнал завёл `.gitignore` сам"
+      measured: "хук `.claude/hooks/skill_log.sh` (код — `skill_log.py`) пишет `.claude/state/skill-runs.jsonl`, по своей докстроке — под `.gitignore`, а заход подключения `.gitignore` не кладёт: после первого вызова навыка в дереве журнала появился неотслеживаемый файл, и стоп-хук окна требовал его закоммитить; журнал завёл `.gitignore` сам"
       trace: ArtVsMark/Engineering-Progress-Ledger#20
