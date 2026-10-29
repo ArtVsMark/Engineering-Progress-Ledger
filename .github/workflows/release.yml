@@ -60,7 +60,15 @@ concurrency:
 jobs:
   # ТОНКИЙ ВЫЗОВ (#1385): выпуск — общим шагом `step-release.yml`, кнопка и её
   # входы — здесь. Имя записи проверки составное: `release / release`.
+  #
+  # ВЫПУСК ЖУРНАЛА ЗАКРЫТ ДО РАЗВЕДЕНИЯ НОМЕРОВ (ArtVsMark/Engineering-Pipeline-Mechanisms#1774).
+  # Шаг выпуска ведёт номер в `CONTRACT_VERSION`, а этот файл механизмы читают
+  # версией СВОЕГО контракта: выпуск завёл бы его на `main`, и обязательная
+  # `ci-complete` покраснела бы на общей ветке. Запрет — условием, а не прозой:
+  # кнопка остаётся, прогон идёт и пропускается с этой причиной. Снимается тем
+  # же изменением, что поднимает тег на выпуск с починкой (#27).
   release:
+    if: false
     uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-release.yml@v1.13.0
     with:
       version: ${{ inputs.version }}
