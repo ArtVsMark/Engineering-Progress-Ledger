@@ -13,6 +13,7 @@ ArtVsMark, которые только дописываются. Что треб
 **Договор — канон, свод — триггеры.** Как журнал ведёт работу — порядок
 источников, ветка, находки в снимке — [`docs/agent/behaviour.md`](docs/agent/behaviour.md);
 какие вопросы о журнале задают и каких не задаёт никто — [`docs/dev/directions.md`](docs/dev/directions.md);
+что значит номер выпуска — [`docs/dev/release.md`](docs/dev/release.md);
 договор конвейера — у поставщика механизмов, по тегу из `uses:` прогонов.
 Здесь их утверждения не повторяются
 ([022](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/022-one-canonical-document.md),
