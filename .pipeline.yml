@@ -17,6 +17,7 @@ checks:
   "pipeline / pipeline": required
   "pr-meta / pr-meta": required
   "rulebook-fresh / rulebook-fresh": required
+  "snapshots": required
   "window-lifetime / window-lifetime": required
   "automerge / automerge":
     class: advisory
