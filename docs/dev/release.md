@@ -12,7 +12,7 @@
 этот файл из дерева потребителя и сверяет с окном `contract:` в
 `.pipeline.yml`: номер журнала там читался бы номером механизмов, и проверка
 краснеет. Развести два номера — дело поставщика
-(ArtVsMark/Engineering-Pipeline-Mechanisms, запись `feedback:
+(ArtVsMark/Engineering-Pipeline-Mechanisms#1774, запись `feedback:
 version-file-collision` в `.pipeline.yml`).
 
 ## Что двигает разряд

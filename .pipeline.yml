@@ -98,7 +98,7 @@ feedback:
       mechanism: scripts/pipeline_checks.py
       version: v1.13.0
       kind: false-refusal
-      measured: "`contract_of` берёт `CONTRACT_VERSION` из дерева потребителя, когда поставщик не опознан, — а в сводной проверке `ci-complete` он не опознаётся; журнал завёл `CONTRACT_VERSION` 0.1.0 своим номером выпуска (EPL #32), и `ci-complete` покраснел: «контракт механизмов 0.1.0 вне объявленного диапазона >=0.14,<0.15»; путь `paths.VERSION` таблицей `paths:` не переназначается, а шаг выпуска ведёт номер именно в нём — своего номера у потребителя с выпусками сейчас нет"
+      measured: "`contract_of` берёт `CONTRACT_VERSION` из дерева потребителя, когда поставщик не опознан, — а в сводной проверке `ci-complete` он не опознаётся; журнал завёл `CONTRACT_VERSION` 0.1.0 своим номером выпуска (EPL #32), и `ci-complete` покраснел: «контракт механизмов 0.1.0 вне объявленного диапазона >=0.14,<0.15»; путь `paths.VERSION` таблицей `paths:` не переназначается, а шаг выпуска ведёт номер именно в нём — своего номера у потребителя с выпусками сейчас нет; у поставщика — ArtVsMark/Engineering-Pipeline-Mechanisms#1774"
       trace: ArtVsMark/Engineering-Progress-Ledger#23
     - slug: preflight-bare-python
       mechanism: scripts/preflight.py
