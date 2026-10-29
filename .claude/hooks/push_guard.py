@@ -1,0 +1,1039 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+"""Толчок не туда отвергается ДО вызова git, а не ловится после.
+
+Держит два критических запрета свода, и адреса у них разные. «НЕ писать в общую
+ветку напрямую» опирается на 131: операция, которая должна нести личность человека, из
+агентского окна не выполняется — прокси подменяет учётные данные НА ЗАПИСИ, и
+прямой толчок в общую ветку ровно такая операция. «НЕ пушить в ветку чужого
+изменения» — из 012, и правило 131 к нему отношения не имеет: там речь не об
+авторстве, а о том, что ветку ведёт своё окно. Общая ссылка «(012, 131)» на оба
+запрета сразу приписывала 131 то, чего в нём нет; нашёл внешний взгляд на #143.
+
+ПОЧЕМУ ХУК, А НЕ ГЕЙТ. Конвейер видит АРТЕФАКТ, а не действие: к запуску
+прогона толчок уже состоялся, и ветка уже сдвинута. Отвергать надо до вызова
+git — единственное место, где это возможно, стоит перед инструментом.
+
+ПРИЗНАК ВЫБРАН ДОСТУПНЫЙ, А НЕ ЖЕЛАЕМЫЙ. «Чужая ветка» машине недоступна: чья
+она, знает человек. Зато доступен признак, которым пользуются все три соседа:
+имя ветки в команде не совпадает с текущей головой. Промах пальцем,
+скопированная из передачи строка, старое имя из прошлой смены — все три дают
+одно наблюдаемое: содержимое уезжает не туда, куда смотрит окно.
+
+ИНЦИДЕНТ, ИЗ-ЗА КОТОРОГО СТОРОЖ ЗАВЕДЁН, СВОЙ. 10.09.2026 окно, стоя на ветке
+`agent/items-sweep`, толкнуло в `agent/marking-moves-out-of-the-queue`. Обе
+свои, обе законные — а следствие такое же, как у чужой: конвейер открыл ВТОРОЕ
+изменение на ту же работу (#116), его пришлось закрывать руками, и ветка
+осталась висеть, потому что прав удалить её у окна нет.
+
+ЧТО РАЗРЕШЕНО. Только толчок ветки `agent/<задача>`, и только из неё самой:
+явным именем текущей ветки или без имени (`git push` толкает голову и
+судится как она). Всё остальное отвергается — общая ветка, `claude/…`, любая
+ветка без приставки, отсоединённая голова и `HEAD:<другая-ветка>`: «своя
+голова под чужим именем» и есть форма инцидента #116, а не исключение из
+него. Имени общей ветки сторож не знает и не угадывает (#1220).
+
+Законный случай «работа должна уехать под другим именем» решается переходом на
+эту ветку, а не толчком мимо головы: тогда окно и конвейер смотрят на одно.
+
+ТЕЛО ДОКУМЕНТА НА ВХОДЕ — ДАННЫЕ, А НЕ КОМАНДА. `cat > файл <<'EOF' … EOF`
+пишет файл, и `git push` внутри него — текст. Сторож смотрит на действие:
+разбор идёт по словам команды, а не поиском подстроки.
+
+Приём взят у соседей (162), файл — нет: у них запреты свои и собраны под их
+конвейеры.
+
+Вход: JSON события PreToolUse на stdin. Выход: 0 — пропустить, 2 — отвергнуть
+с причиной в stderr.
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from typing import Final
+
+#: Бюджет всех вызовов git на заход. ОН ОБЯЗАН БЫТЬ МЕНЬШЕ ПРЕДЕЛА ХУКА
+#: (`timeout` в `.claude/settings.json`, 10 с): убитый площадкой хук —
+#: не-блокирующая ошибка, и толчок прошёл бы без проверки (100, письмо каталога
+#: #1439). Бюджет общий, а не на вызов: число вызовов растёт с числом веток в
+#: толчке. Запас до предела — на запуск интерпретатора и разбор. Сверяет
+#: `tests/test_push_guard.py::test_the_git_budget_fits_the_hook_limit`.
+GIT_BUDGET: Final = 7.0
+#: Дедлайн одного вызова — не больше остатка бюджета.
+GIT_DEADLINE: Final = 2.5
+#: Начало захода: от него считается остаток бюджета. Ставит его `main()`, а
+#: не импорт: модуль, загруженный раньше захода (набор тестов держит его
+#: минутами), иначе приходил бы с бюджетом, исчерпанным до первого git. `None`
+#: — вне захода: общий бюджет не считается, дедлайн одного вызова — да.
+started: float | None = None
+#: Предел чужого текста в причине отказа — тот же, что у общей обрезки.
+LIMIT: Final = 300
+
+
+def cut(text: str, limit: int = LIMIT) -> str:
+    """Обрезает чужой текст для причины отказа, сказав, насколько он обрезан.
+
+    КОПИЯ `report.cut` НАМЕРЕННАЯ — по той же причине, что литерал приставки
+    ниже: хук не импортирует дерево (046). Без неё было два плохих исхода:
+    молчаливый срез на месте выглядел полным ответом, а скрипт целиком давал
+    причину любой длины (016, находка `64f3440`). Совпадение с каноном держит
+    `tests/test_push_guard.py::test_the_cut_is_the_transport_one`.
+    """
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}… (обрезано, всего {len(text)} знаков)"
+
+
+def tail(text: str, limit: int = LIMIT) -> str:
+    """Оставляет конец вывода процесса для причины отказа, сказав, насколько он обрезан.
+
+    КОНЕЦ, А НЕ НАЧАЛО (взгляд на #1486): у вывода git причина стоит последней
+    строкой, и срез начала терял именно её. Копия `report.tail` — по той же
+    причине, что `cut` выше; совпадение держит
+    `tests/test_push_guard.py::test_the_tail_is_the_transport_one`.
+    """
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    return f"(обрезано, всего {len(text)} знаков) …{text[-limit:]}"
+
+
+def git(*args: str, where: str = "") -> subprocess.CompletedProcess[str] | str:
+    """Вызов git с дедлайном; отказ запуска или истёкший срок — причина строкой.
+
+    ОТКАЗ НЕ РОНЯЕТ СТРАЖА (письмо каталога #1439). `OSError` от отсутствующего
+    git и `TimeoutExpired` прежде уходили трейсбеком с кодом 1 — его площадка
+    считает НЕблокирующей ошибкой, и толчок проходил без проверки. Теперь отказ
+    — причина, а зовущий решает, что «не проверено» значит «не пущу».
+    """
+    deadline = GIT_DEADLINE
+    if started is not None:
+        left = GIT_BUDGET - (time.monotonic() - started)
+        if left <= 0:
+            return f"бюджет сторожа на git ({GIT_BUDGET} с) исчерпан до git {args[0]}"
+        deadline = min(deadline, left)
+    try:
+        return subprocess.run(
+            ["git", *args],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=deadline,
+            cwd=where or None,
+        )
+    except subprocess.TimeoutExpired:
+        return f"git {args[0]} не ответил за {deadline:.1f} с"
+    except OSError as exc:
+        return f"git не запустился: {exc}"
+
+
+#: Единственная приставка ветки, в которую окно вправе толкать (131, 003).
+#:
+#: СТРОГОЕ ПРАВИЛО ВМЕСТО УГАДЫВАНИЯ ОБЩЕЙ ВЕТКИ (решение владельца 08.10.2026,
+#: #1220). Прежде перехват запрещал толчок в общую ветку и потому должен был
+#: знать её имя: сперва вшитое `main`, затем `origin/HEAD` клона. Поздний взгляд
+#: на #1218 нашёл пять форм одной беды — ссылки нет, она устарела после
+#: переименования, `git -C` читает не тот клон, отказ называет не ту причину,
+#: совет подаёт умолчание фактом. Круг рвёт правило, которому имя общей ветки
+#: не нужно вовсе (210): окно пишет только в `agent/<задача>`, ветку, по которой
+#: конвейер открывает изменение (003). Всё прочее — общая ветка, чужая ветка,
+#: ветка окна `claude/…` — отвергается одинаково.
+#:
+#: ЛИТЕРАЛ ЗДЕСЬ НАМЕРЕННЫЙ, а не забытая унификация с `agent_pr.PREFIXES`.
+#: Перехват живёт вне `scripts/` и импортировать дерево не вправе: запрет на
+#: толчок перестал бы работать ровно тогда, когда дерево сломано (046).
+#: Совпадение с каноном держит `tests/test_push_guard.py::test_the_prefix_is_the_pipeline_one`.
+AGENT_PREFIX: Final = "agent/"
+#: Ключи `git push`, за которыми идёт значение, а не имя ветки.
+WITH_VALUE: Final = frozenset(
+    {"--repo", "-o", "--push-option", "--exec", "--receive-pack"}
+)
+#: Управляющие операторы оболочки: они делят строку на команды. Длинные — раньше
+#: коротких, иначе `&&` прочёлся бы двумя `&`.
+CONTROL: Final = ("&&", "||", ";;", "|&", ";", "|", "&", "\n", "(", ")")
+#: Операторы перенаправления. Цель — следующее слово, слитное или раздельное
+#: (`>out.log`, `> out.log`, `2>&1`), и она снимается вместе с оператором.
+REDIRECTS: Final = (
+    "&>>",
+    "&>",
+    "<<<",
+    "<<-",
+    ">>",
+    ">|",
+    ">&",
+    "<<",
+    "<>",
+    "<&",
+    ">",
+    "<",
+)
+#: Служебное слово сегмента, которым `unwrap` передаёт «дерево не узнать»
+#: (#1746): обёртка или присваивание уводят git в другое дерево, а сам
+#: сегмент с этим знаком командой не бывает — в слове есть пробел.
+LOST_TREE: Final = "<дерево не узнать>"
+#: Переменные окружения, уводящие git в другое дерево — как `--git-dir`.
+TREE_VARIABLES: Final = ("GIT_DIR=", "GIT_WORK_TREE=")
+#: Присваивание переменной перед командой: имя по правилу оболочки, затем `=`.
+ASSIGNMENT: Final = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+#: Глобальные ключи самого git со значением: `git -C путь push`. Отделять их
+#: нужно, потому что подкоманда — первое слово без ключа.
+GLOBAL_WITH_VALUE: Final = frozenset(
+    {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
+)
+#: Приставка ссылки: в `refs/heads/agent/x` предметом сверки служит имя ветки.
+REF_PREFIX: Final = "refs/heads/"
+#: Обёртки, за которыми идёт команда, и КЛЮЧИ КАЖДОЙ, несущие значение.
+#:
+#: ПОЧЕМУ КЛЮЧИ НАЗВАНЫ ПОИМЁННО, А НЕ УГАДЫВАЮТСЯ. Обёртке нужно пропустить её
+#: собственные ключи и взять СЛЕДУЮЩЕЕ слово как программу. «Пропустить всё, что
+#: начинается с дефиса» не работает: `nice -n 5` оставляет `5` первым словом, то
+#: есть командой. Поиск `git` дальше по словам — тоже: он находит его в ДАННЫХ
+#: чужой программы, и `env echo git push origin main` отвергалось как толчок в
+#: общую ветку (нашёл внешний взгляд на #186). Поэтому у каждой обёртки назван
+#: её набор: список закрытый, а ключ вне его делает сторожа слепым, и слепой
+#: отвергает (068).
+WRAPPERS: Final[dict[str, frozenset[str]]] = {
+    "env": frozenset({"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}),
+    "command": frozenset(),
+    "nice": frozenset({"-n", "--adjustment"}),
+    "nohup": frozenset(),
+    "stdbuf": frozenset({"-i", "-o", "-e", "--input", "--output", "--error"}),
+    "time": frozenset({"-f", "--format", "-o", "--output"}),
+    "timeout": frozenset({"-s", "--signal", "-k", "--kill-after"}),
+}
+#: Ключи обёрток БЕЗ значения: их пропускают по одному слову. Тоже поимённо и
+#: по той же причине.
+WRAPPER_FLAGS: Final[dict[str, frozenset[str]]] = {
+    "env": frozenset({"-i", "--ignore-environment", "-0", "--null", "-v", "--debug"}),
+    "command": frozenset({"-p", "-v", "-V"}),
+    "nice": frozenset(),
+    "nohup": frozenset(),
+    "stdbuf": frozenset(),
+    "time": frozenset({"-p", "-v", "--verbose", "--portability", "-a", "--append"}),
+    "timeout": frozenset({"--preserve-status", "--foreground", "-v", "--verbose"}),
+}
+#: ЧТО ДЕЛАЕТ НЕПОЛНОТА ЭТИХ СПИСКОВ, И ПОЧЕМУ ОНА ТЕРПИМА. Набор ключей у
+#: утилиты растёт с версиями, и список по памяти отстаёт — `env -C`, `env -S`,
+#: `time -a` первая редакция не знала (нашёл внешний взгляд на #189). Цена
+#: отставания названа и идёт в безопасную сторону: неизвестный ключ делает
+#: сторожа слепым, а слепой ОТВЕРГАЕТ. То есть законная команда получит отказ с
+#: названной причиной — «ключ сторожу неизвестен», — и человек либо перепишет
+#: её проще, либо допишет ключ сюда. Обратная ошибка — угадать и пропустить
+#: толчок — здесь невозможна по построению, и это и есть смысл выбора (051).
+#: Сколько СВОИХ позиционных слов обёртка съедает перед командой. У `timeout`
+#: это длительность (`timeout 30 git push …`) — не ключ, а обычное слово, и без
+#: этого числа разбор принимал его за имя программы и уходил ни с чем.
+WRAPPER_ARGS: Final[dict[str, int]] = {"timeout": 1}
+#: Обёртки, которые принимают СКРИПТ строкой: `bash -c "git push …"`. Их
+#: содержимое разбирается заново, как отдельная команда.
+SHELLS: Final = frozenset({"sh", "bash", "zsh", "dash", "ksh"})
+#: Короткие ключи оболочки БЕЗ значения, которые законно стоят в одной связке
+#: перед `-c`: `bash -lc "…"`, `sh -xc "…"`. Список закрытый, и это важно:
+#: `-norc` содержит `c`, но `c` в нём не последний и `o` несёт значение —
+#: принять такую связку за `-c` значит прочитать не тот аргумент как скрипт, а
+#: толчок под ней пройдёт необнаруженным (нашёл внешний взгляд на #186).
+SHELL_FLAGS: Final = "ilsrxevh"
+#: Насколько глубоко сторож идёт внутрь вложенных оболочек. Предел нужен:
+#: `bash -c "bash -c …"` без него ушёл бы в бесконечность. ИСЧЕРПАНИЕ ПРЕДЕЛА —
+#: ОТКАЗ, А НЕ ПРОПУСК: сторож, не дочитавший команду, не знает, толчок это или
+#: нет, и «не знаю» здесь обязано значить «не пущу» — как и у неузнанной головы.
+#: Прежде предел молча отдавал команду дальше, и это расходилось с фейл-клоузом,
+#: выбранным в том же изменении для `head()`. Нашёл внешний взгляд на #181.
+DEPTH: Final = 4
+
+
+def is_git(word: str) -> bool:
+    """Слово вызывает git — под любым написанием пути.
+
+    Сторож ловил только буквальное `git`, и `/usr/bin/git push` проходил мимо
+    целиком. Признак — ИМЯ программы, а не строка вызова: путь до неё дело
+    окружения, а не намерения. Нашёл внешний взгляд на #143.
+    """
+    return word.rsplit("/", 1)[-1] == "git"
+
+
+@dataclass(frozen=True, slots=True)
+class Look:
+    """Что сторож разглядел в команде: цели толчка либо причину слепоты.
+
+    ТРИ ОТВЕТА, А НЕ ДВА. «Это толчок вот туда», «это не толчок» и «разобрать
+    не удалось» — разные состояния, и сваливать третье во второе значит
+    пропускать ровно то, чего не понял (045). Прежде разбор отдавал `None` и
+    на «не толчок», и на исчерпанный предел вложенности.
+    """
+
+    targets: tuple[str, ...] = ()
+    blind: str = ""
+    #: Это толчок. Пустые `targets` сами этого не говорят: толчок без цели и
+    #: «не толчок» отдавали одно и то же, и после взгляда на #1226 сторож стал
+    #: судить головой любую команду — `ls` в отсоединённой голове отвергался.
+    push: bool = False
+    #: Каталог, в котором идёт толчок: голова читается в нём, а не в каталоге
+    #: сторожа (#1746). Пусто — каталог процесса.
+    where: str = ""
+
+
+def script_of(segment: list[str]) -> tuple[str | None, str]:
+    """Скрипт, переданный оболочке ключом `-c`, и причина слепоты.
+
+    КЛЮЧ БЫВАЕТ СОВМЕЩЁННЫМ, НО НЕ ЛЮБАЯ СВЯЗКА С БУКВОЙ `c` — ЭТО `-c`.
+    `bash -lc "…"`, `sh -xc "…"` — обычные написания, и разбор, искавший ровно
+    слово `-c`, на них ломался. Но `-norc` тоже содержит `c`, а значит совсем
+    другое: `c` в нём не последний, а `o` несёт значение. Принять такую связку
+    за `-c` — прочитать не тот аргумент как скрипт, и толчок под ней пройдёт
+    необнаруженным. Нашёл внешний взгляд на #186, оба конца.
+
+    Поэтому связка принимается, только если `c` в ней ПОСЛЕДНИЙ, а всё до него —
+    известные короткие ключи без значения. Всё прочее с буквой `c` делает
+    сторожа слепым: он не берётся угадывать, какой из аргументов скрипт.
+    """
+    for place, word in enumerate(segment[1:], start=1):
+        if word == "--":
+            return None, ""
+        if not word.startswith("-") or word.startswith("--") or len(word) < 2:
+            continue
+        cluster = word[1:]
+        if "c" not in cluster:
+            continue
+        if cluster.endswith("c") and all(
+            letter in SHELL_FLAGS for letter in cluster[:-1]
+        ):
+            if place + 1 < len(segment):
+                return segment[place + 1], ""
+            return None, f"у оболочки ключ «{cut(word)}» без скрипта — читать нечего"
+        return None, (
+            f"связка ключей «{cut(word)}» неоднозначна: где в ней скрипт, сторожу неизвестно"
+        )
+    return None, ""
+
+
+def split_string_of(segment: list[str]) -> tuple[str | None, str]:
+    """Строка `env -S «…»`, если она есть: `env` разбивает её сам, как оболочка."""
+    for place, word in enumerate(segment[1:], start=1):
+        if word == "--":
+            return None, ""
+        head, sign, joined = word.partition("=")
+        if head in ("-S", "--split-string"):
+            if sign:
+                return joined, ""
+            if place + 1 < len(segment):
+                return segment[place + 1], ""
+            return None, "у `env -S` нет строки — читать нечего"
+        if word.startswith("-S") and len(word) > 2:
+            return word[2:], ""
+    return None, ""
+
+
+def after_wrapper(name: str, rest: list[str]) -> tuple[list[str], str]:
+    """Слова после ключей обёртки — начиная с программы, которую она запускает.
+
+    КЛЮЧИ ПРОПУСКАЮТСЯ ПО ИМЕНИ, А КОМАНДА БЕРЁТСЯ СЛЕДУЮЩИМ СЛОВОМ. Прежде
+    здесь стояло сканирование — «найти `git` дальше по словам», — и оно
+    дотягивалось до ДАННЫХ чужой программы: `env echo git push origin main`
+    отвергалось как толчок в общую ветку. Ключ, которого нет в наборе обёртки,
+    делает сторожа слепым: угадать, несёт он значение или нет, нечем, а ошибка
+    в любую сторону молча меняет, что считается командой.
+    """
+    values, flags = (
+        WRAPPERS.get(name, frozenset()),
+        WRAPPER_FLAGS.get(name, frozenset()),
+    )
+    place = 0
+    eaten = 0
+    while place < len(rest):
+        word = rest[place]
+        if word == "--":
+            return rest[place + 1 + WRAPPER_ARGS.get(name, 0) - eaten :], ""
+        if not word.startswith("-"):
+            # `VAR=value` перед командой — то же присваивание, что и на верхнем
+            # уровне: своё написание того же вызова.
+            if "=" in word and not word.startswith("="):
+                place += 1
+                continue
+            if eaten < WRAPPER_ARGS.get(name, 0):
+                eaten += 1
+                place += 1
+                continue
+            return rest[place:], ""
+        head, _, joined = word.partition("=")
+        if head in values:
+            place += 1 if joined else 2
+            continue
+        if head in flags:
+            place += 1
+            continue
+        # Совмещённый короткий ключ со значением: `stdbuf -oL`, `nice -n5`.
+        if len(word) > 2 and word[:2] in values:
+            place += 1
+            continue
+        return [], f"ключ «{cut(word)}» у обёртки «{name}» сторожу неизвестен"
+    return [], f"после обёртки «{name}» команды нет"
+
+
+def unwrap(segment: list[str], depth: int) -> tuple[list[list[str]], str]:
+    """Снимает обёртки и раскрывает `bash -c «…»`; отдаёт команды и слепоту.
+
+    ОБЁРТКА — НЕ МАСКИРОВКА, И СПИСОК ЕЁ ЗАКРЫТ. `env git push`, `nohup git
+    push`, `bash -c "git push …"` — законные написания того же действия, и
+    сторож, смотрящий только на первое слово, пропускал их все. Список
+    разрешительный: что не названо обёрткой, обёрткой не считается (068).
+
+    ОБЁРТКА ВОКРУГ ОБОЛОЧКИ — ТОЖЕ ОБЁРТКА. `env bash -c "git push …"`
+    проходил необнаруженным: разбор снимал `env` и на этом останавливался,
+    потому что дальше шёл не `git`. Снятие идёт по кругу, пока снимается.
+
+    ВТОРЫМ ОТДАЁТСЯ ПРИЧИНА СЛЕПОТЫ. Предел вложенности исчерпан, ключ обёртки
+    неизвестен, связка ключей оболочки неоднозначна — команда не дочитана, и
+    сторож об этом говорит, а не отдаёт её дальше молча.
+    """
+    if not segment:
+        return [segment], ""
+    if depth <= 0:
+        return [], "предел вложенности оболочек исчерпан — команда не дочитана"
+    first = segment[0].rsplit("/", 1)[-1]
+    # `VAR=value git push` — присваивания перед командой, своё написание того же.
+    # ПРИСВАИВАНИЕ УЗНАЁТСЯ ПО ЦЕЛОМУ СЛОВУ, А НЕ ПО ХВОСТУ ПОСЛЕ `/` (#1746):
+    # значение с косой чертой (`FOO=a/b git push origin main`) давало хвост
+    # без `=`, и толчок в общую ветку проходил, не узнанный толчком вовсе.
+    if ASSIGNMENT.match(segment[0]) and len(segment) > 1:
+        after, blind = unwrap(segment[1:], depth - 1)
+        if segment[0].startswith(TREE_VARIABLES):
+            return [
+                [LOST_TREE, f"«{cut(segment[0])}» уводит git в другое дерево"],
+                *after,
+            ], blind
+        return after, blind
+    if first in SHELLS:
+        script, blind = script_of(segment)
+        if blind:
+            return [], blind
+        if script is None:
+            return [segment], ""
+        try:
+            inner = commands_of(script)
+        except ValueError as exc:
+            # Скрипт обрезается ВСЛУХ: молчаливый срез на месте выглядит полным
+            # ответом (016, взгляд на #1462), а целиком он даёт причину любой
+            # длины (`64f3440`). Причина отказа — та же, что у верхнего уровня
+            # (`look`): кавычка или разделитель документа (195).
+            return [], f"скрипт оболочки не разбирается — {exc}: {cut(script)}"
+        found: list[list[str]] = []
+        for part in inner:
+            deeper, blind = unwrap(part, depth - 1)
+            if blind:
+                return [], blind
+            found.extend(deeper)
+        return found or [segment], ""
+    if first == "env":
+        # `env -S "git push …"` — та же передача СКРИПТА строкой, что и `-c` у
+        # оболочки: `env` сам разбивает её на слова. Пропустить её как обычное
+        # значение ключа значило бы остаться без команды — сторож отвергал бы
+        # такую строку слепотой, не назвав ветки. Нашёл внешний взгляд на #189.
+        script, blind = split_string_of(segment)
+        if blind:
+            return [], blind
+        if script is not None:
+            try:
+                inner = commands_of(script)
+            except ValueError as exc:
+                return [], f"строка `env -S` не разбирается — {exc}: {cut(script)}"
+            split: list[list[str]] = []
+            for part in inner:
+                deeper, blind = unwrap(part, depth - 1)
+                if blind:
+                    return [], blind
+                split.extend(deeper)
+            return split or [segment], ""
+    if first in WRAPPERS and len(segment) > 1:
+        rest, blind = after_wrapper(first, segment[1:])
+        if blind:
+            return [], blind
+        # Внутри обёртки может стоять другая обёртка или оболочка — снятие идёт
+        # по кругу, а не один раз.
+        wrapped, blind = unwrap(rest, depth - 1)
+        # СМЕНА ДЕРЕВА ВНУТРИ ОБЁРТКИ НЕ ТЕРЯЕТСЯ (взгляд на #1747): `env -C X`
+        # и `env --chdir X` — тот же `cd X`, а присваивание `GIT_DIR=` после
+        # `env` — то же, что на верхнем уровне. Отдаются служебными сегментами
+        # перед командой, и `push_targets` ведёт их так же.
+        moves = tree_moves(first, segment[1 : len(segment) - len(rest)])
+        return [*moves, *wrapped], blind
+    return [segment], ""
+
+
+def tree_moves(name: str, options: list[str]) -> list[list[str]]:
+    """Смены дерева в ключах обёртки: `cd`-сегменты и знак «дерево не узнать»."""
+    if name != "env":
+        return []
+    moves: list[list[str]] = []
+    place = 0
+    while place < len(options):
+        word = options[place]
+        if word in ("-C", "--chdir") and place + 1 < len(options):
+            moves.append(["cd", options[place + 1]])
+            place += 2
+            continue
+        if word.startswith("--chdir="):
+            moves.append(["cd", word.partition("=")[2]])
+        elif word.startswith("-C") and len(word) > 2:
+            moves.append(["cd", word[2:]])
+        elif word.startswith(TREE_VARIABLES):
+            moves.append([LOST_TREE, f"«{cut(word)}» уводит git в другое дерево"])
+        place += 1
+    return moves
+
+
+def commands_of(text: str) -> list[list[str]]:
+    """Команды строки оболочки — словами, без перенаправлений.
+
+    РАЗБОР ПО ПРАВИЛУ ОБОЛОЧКИ, А НЕ ПОВЕРХ `shlex.split`. Прежний разбор
+    делил строку `shlex.split`, а тот не знает операторов и снимает кавычки:
+    перенаправление чинилось формами поверх уже потерянного, и взгляд трижды
+    находил следующую — приклеенное к ветке, голое `>&`, `>` в кавычках,
+    склейку `cd d&&git …` и `true;git …` (`55f1f51`, `3406ba5`, `6254a26`,
+    `9248712`, `4dcc9c8`). Здесь один проход, как у самой оболочки:
+
+    * кавычки и обратная косая черта защищают символы — `>` и `&&` внутри
+      них часть слова;
+    * вне кавычек управляющий оператор (`CONTROL`) кончает команду, где бы он
+      ни стоял, хоть вплотную к слову;
+    * вне кавычек оператор перенаправления (`REDIRECTS`) снимается вместе со
+      своей целью — следующим словом. Номер дескриптора перед ним — только
+      слово из одних цифр без кавычек вплотную к оператору: `2>&1` —
+      перенаправление, `agent/x2>&1` — ветка `agent/x2`;
+    * `#` в начале слова открывает комментарий до конца строки.
+
+    * тело встроенного документа (`<<EOF` … `EOF`) — данные: строки до
+      разделителя пропускаются целиком, `git push` в записываемом файле —
+      текст, а не действие; документ без разделителя — слепота, а не тело
+      до конца строки;
+    * `$'…'` и `$"…"` — кавычки, а `\\` с переводом строки внутри `"…"`
+      снимается, как у оболочки.
+
+    ПРЕДЕЛ НАЗВАН. Подстановки `$(…)`, обратные кавычки и переменные не
+    раскрываются — их не раскрывает и сторож, судящий слова. Незакрытая
+    кавычка — ``ValueError``: команду не прочесть, и сторож об этом говорит.
+    """
+    commands: list[list[str]] = [[]]
+    word: list[str] = []
+    started = quoted = dropping = False
+    #: Разделители встроенных документов, ждущие конца строки: (слово, `<<-`).
+    heredocs: list[tuple[str, bool]] = []
+    heredoc: bool | None = None
+
+    def finish() -> None:
+        nonlocal started, quoted, dropping, heredoc
+        if started:
+            if dropping:
+                dropping = False
+                if heredoc is not None:
+                    heredocs.append(("".join(word), heredoc))
+                    heredoc = None
+            else:
+                commands[-1].append("".join(word))
+        word.clear()
+        started = quoted = False
+
+    def skip_bodies(at: int) -> int:
+        """С начала строки `at` пропускает тела ждущих документов; отдаёт новое место."""
+        for mark, tabs in heredocs:
+            while True:
+                if at >= len(text):
+                    # РАЗДЕЛИТЕЛЬ НЕ НАЙДЕН — ЭТО СЛЕПОТА, А НЕ ТЕЛО ДО КОНЦА
+                    # (находка `664b218` на #1079). `<<` бывает и арифметикой
+                    # (`$((1<<2))`), и тогда «тело» проглотило бы толчок на
+                    # следующей строке, а сторож ответил бы «не толчок» (045).
+                    raise ValueError(
+                        f"встроенный документ без разделителя «{cut(mark)}»"
+                    )
+                end = text.find("\n", at)
+                line = text[at : len(text) if end < 0 else end]
+                at = len(text) if end < 0 else end + 1
+                if (line.lstrip("\t") if tabs else line) == mark:
+                    break
+        heredocs.clear()
+        return at
+
+    at = 0
+    while at < len(text):
+        char = text[at]
+        if char in " \t":
+            finish()
+            at += 1
+        elif char == "\\":
+            if text[at + 1 : at + 2] == "\n":
+                at += 2
+                continue
+            word.append(text[at + 1 : at + 2])
+            started = quoted = True
+            at += 2
+        elif char == "$" and text[at + 1 : at + 2] in ("'", '"'):
+            # `$'…'` и `$"…"` — кавычки оболочки, а не слово с `$`: `git push
+            # origin $'main'` толкает `main` (находка `c4a1a12`). Знак снимается,
+            # кавычка разбирается следующим шагом. Предел назван: escape-коды
+            # внутри `$'…'` (`\n`, `\x41`) не раскрываются.
+            at += 1
+        elif char == "'":
+            end = text.find("'", at + 1)
+            if end < 0:
+                raise ValueError("одиночная кавычка не закрыта")
+            word.append(text[at + 1 : end])
+            started = quoted = True
+            at = end + 1
+        elif char == '"':
+            at += 1
+            while True:
+                if at >= len(text):
+                    raise ValueError("двойная кавычка не закрыта")
+                if text[at] == '"':
+                    break
+                if text[at] == "\\" and text[at + 1 : at + 2] == "\n":
+                    # Внутри двойных кавычек `\` с переводом строки оболочка
+                    # снимает целиком (находка `17859f3`).
+                    at += 2
+                    continue
+                if text[at] == "\\" and text[at + 1 : at + 2] in ('"', "\\", "$", "`"):
+                    at += 1
+                word.append(text[at])
+                at += 1
+            started = quoted = True
+            at += 1
+        elif char == "#" and not started:
+            end = text.find("\n", at)
+            at = len(text) if end < 0 else end
+        elif redirect := next(
+            (one for one in REDIRECTS if text.startswith(one, at)), None
+        ):
+            if started and not quoted and "".join(word).isdigit():
+                word.clear()
+                started = False
+            else:
+                finish()
+            dropping = True
+            heredoc = redirect == "<<-" if redirect in ("<<", "<<-") else None
+            at += len(redirect)
+        elif control := next(
+            (one for one in CONTROL if text.startswith(one, at)), None
+        ):
+            finish()
+            dropping = False
+            commands.append([])
+            at += len(control)
+            if control == "\n" and heredocs:
+                at = skip_bodies(at)
+        else:
+            word.append(char)
+            started = True
+            at += 1
+    finish()
+    return [command for command in commands if command] or [[]]
+
+
+def push_targets(command: str, start: str = "") -> Look:
+    """Что сторож разглядел: цели толчка, «не толчок» или причину слепоты.
+
+    Разбор по СЛОВАМ: подстрока `git push` встречается и в тексте документа, и
+    в сообщении коммита, а действие — только у разобранной команды.
+
+    НЕРАЗОБРАННАЯ КОМАНДА — НЕ «НЕ ТОЛЧОК». Строка с незакрытой кавычкой и
+    исчерпанный предел вложенности прежде отдавались тем же ответом, что и
+    безобидный `ls`, — то есть сторож пропускал ровно то, чего не понял (045).
+    Нашёл внешний взгляд на #181.
+    """
+    try:
+        parts = commands_of(command)
+    except ValueError as exc:
+        # ПРИЧИНА — СВОЯ У КАЖДОГО ОТКАЗА РАЗБОРА, А НЕ ОДНА НА ВСЕХ (045).
+        # Документ без разделителя прежде назывался незакрытой кавычкой. Все
+        # отказы `commands_of` — свои и уже обрезаны, поэтому текст берётся как
+        # есть.
+        return Look(blind=f"команда не разбирается на слова — {exc}")
+    # КАТАЛОГ ТОЛЧКА ВЕДЁТСЯ ПО СТРОКЕ, А НЕ БЕРЁТСЯ У СТОРОЖА (#1746). Окно,
+    # которое ведёт два репозитория, толкает второй через `cd` или `git -C`, а
+    # голова читалась в дереве проекта — и толчок в свою ветку второго
+    # репозитория отвергался всегда. Начало — каталог события (`cwd`), затем
+    # каждое `cd`/`pushd` строки, `cd` скрипта и `env -C`, каждый `-C` толчка.
+    # Каталог, который не узнать (`cd -`, `popd`, переменная, `--git-dir`,
+    # `GIT_DIR=`), — слепота при толчке, а не каталог
+    # сторожа (045). ПРЕДЕЛ НАЗВАН: подоболочка `( cd … )` разбором не
+    # отличается от `cd … ;`, и её `cd` считается действующим.
+    where, lost = start, ""
+    for part in parts:
+        if part and part[0] in DIRECTORY_MOVES:
+            where, lost = moved_by(part, where, lost)
+            continue
+        found, blind = unwrap(part, DEPTH)
+        if blind:
+            return Look(blind=blind)
+        # Внутри скрипта оболочки и обёртки каталог ведётся своим счётом: после
+        # `bash -c "cd X …"` внешний каталог прежний (взгляд на #1747).
+        inner, unknown_inner = where, lost
+        for segment in found:
+            if segment and segment[0] == LOST_TREE:
+                unknown_inner = unknown_inner or segment[1]
+                continue
+            if segment and segment[0] in DIRECTORY_MOVES:
+                inner, unknown_inner = moved_by(segment, inner, unknown_inner)
+                continue
+            if not segment or not is_git(segment[0]):
+                continue
+            here, unknown = inner, unknown_inner
+            rest = segment[1:]
+            while rest and rest[0].startswith("-"):
+                if rest[0] == "-C" and len(rest) > 1:
+                    here, unknown = moved(here, unknown, [rest[1]])
+                elif rest[0] in ("--git-dir", "--work-tree") or rest[0].startswith(
+                    ("--git-dir=", "--work-tree=")
+                ):
+                    unknown = (
+                        f"«{cut(rest[0])}» уводит git в другое дерево, "
+                        "а сторож судит его по `-C` и `cd`"
+                    )
+                rest = rest[2:] if rest[0] in GLOBAL_WITH_VALUE else rest[1:]
+            if rest and rest[0] == "push":
+                if unknown:
+                    return Look(blind=f"каталог толчка не узнан — {unknown}")
+                return Look(
+                    targets=tuple(named_branches(rest[1:])), push=True, where=here
+                )
+    return Look()
+
+
+#: Команды смены каталога, которые сторож ведёт по строке.
+DIRECTORY_MOVES: Final = ("cd", "pushd", "popd")
+
+
+def moved_by(command: list[str], where: str, lost: str) -> tuple[str, str]:
+    """Каталог после `cd`/`pushd`/`popd`; `popd` возвращает в каталог, которого сторож не ведёт."""
+    if command[0] == "popd":
+        # Стек каталогов сторож не ведёт: после `popd` каталог не узнать, и
+        # толчок дальше — отказ, а не голова последнего `pushd` (взгляд на #1747).
+        return where, lost or "«popd» возвращает в каталог, которого сторож не ведёт"
+    return moved(where, lost, command[1:])
+
+
+def moved(where: str, lost: str, arguments: list[str]) -> tuple[str, str]:
+    """Каталог после `cd` или `-C` с этими доводами и причина, если его не узнать."""
+    if lost:
+        return where, lost
+    said = [one for one in arguments if one not in ("-L", "-P")]
+    if not said:
+        return os.path.expanduser("~"), ""
+    if len(said) > 1 or said[0] == "-" or "$" in said[0] or "`" in said[0]:
+        return where, f"«cd {cut(' '.join(arguments))}» сторож не раскрывает"
+    return os.path.join(where or os.getcwd(), os.path.expanduser(said[0])), ""
+
+
+def named_branches(arguments: list[str]) -> list[str]:
+    """Ветки-цели из аргументов `git push`, кроме первого (удалённого имени)."""
+    found: list[str] = []
+    skip = False
+    seen_remote = False
+    for word in arguments:
+        if skip:
+            skip = False
+            continue
+        if word in WITH_VALUE:
+            skip = True
+            continue
+        if word.startswith("-"):
+            continue
+        if not seen_remote:
+            seen_remote = True
+            continue
+        found.append(word)
+    return found
+
+
+def head(where: str = "") -> tuple[str, str]:
+    """Текущая ветка и причина, по которой её не узнать.
+
+    ДВА ОТВЕТА, А НЕ ОДИН, и разница здесь стоит половины сторожа. Прежде отказ
+    `git rev-parse` отдавался пустой строкой — той же, что и отсоединённая
+    голова, — и половина проверки («толчок мимо своей ветки») исчезала МОЛЧА.
+    Докстрока при этом уверяла, что пусто бывает только при отсоединённой
+    голове; на деле пусто бывает и когда git не нашёлся, и когда каталог не
+    репозиторий. Нашёл внешний взгляд на #143.
+
+    Отсоединённая голова даёт `HEAD` и код 0 — это не отказ, и сюда не
+    попадает.
+
+    ПОЛНЫМ ИМЕНЕМ, А НЕ `--abbrev-ref` (взгляд на #1513): при одноимённом теге
+    короткое имя — `heads/<имя>`, и толчок в свою ветку отвергался как толчок
+    мимо неё. Та же форма, что у `gitcall.branch`; копия своя — хук дерево не
+    импортирует (046).
+    """
+    said = git("rev-parse", "--symbolic-full-name", "HEAD", where=where)
+    if isinstance(said, str):
+        return "", said
+    if said.returncode != 0:
+        return "", tail(said.stderr) or f"git rev-parse вернул {said.returncode}"
+    return said.stdout.strip().removeprefix(REF_PREFIX), ""
+
+
+def branch_of(target: str) -> str:
+    """Имя ветки, которое получит площадка, из записи цели толчка.
+
+    У формы `откуда:куда` предмет — ПРАВАЯ часть: именно её имя получит
+    площадка, и именно по нему конвейер откроет изменение. Приставка
+    `refs/heads/` снимается там же.
+
+    ОДНО МЕСТО НА ВСЕХ СПРАШИВАЮЩИХ. Разбор был вписан дважды — в проверке
+    запретов и в проверке воскрешения, — и второе понимание той же формы
+    разошлось бы с первым молча; нашёл внешний взгляд
+    ([090](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/090-shared-helpers-move-up-not-sideways.md)).
+    """
+    if ":" in target:
+        target = target.split(":", 1)[1]
+    return target.removeprefix(REF_PREFIX)
+
+
+def refused(targets: list[str], current: str) -> str:
+    """Причина отказа; пусто — толчок разрешён."""
+    for raw in targets:
+        target = branch_of(raw)
+        if not target.startswith(AGENT_PREFIX):
+            return (
+                f"«{cut(target)}» — не ветка изменения: окно пишет только в "
+                f"`{AGENT_PREFIX}<задача>`, "
+                "по ней конвейер открывает изменение (003). В общую и чужие ветки — только "
+                "изменением (критический запрет свода)"
+            )
+        if current and target != current:
+            return (
+                f"толчок в «{cut(target)}», а голова стоит на «{cut(current)}». "
+                "Ветку изменения ведёт "
+                "своё окно (012). Если это ваша работа — перейдите на неё, иначе конвейер "
+                "откроет второе изменение на ту же работу: 10.09.2026 так и вышло с #116"
+            )
+    return ""
+
+
+def merged_away(branch: str, where: str = "") -> str:
+    """Причина отказа, если ветку уже слили и удалили; пусто — толчок разрешён.
+
+    ВЕТКА, УДАЛЁННАЯ ПЛОЩАДКОЙ ПРИ СЛИЯНИИ, ВОСКРЕСАЕТ ОТ ЛЮБОГО СЛЕДУЮЩЕГО
+    ТОЛЧКА — вместе со всеми коммитами, которых нет в общей ветке. Продолжение
+    работы после слияния идёт с НОВОЙ ветки от свежей общей, и проверяется это
+    ДО толчка, существованием ветки, а не памятью о том, слился ли PR
+    ([202](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/202-a-merged-branch-is-recreated-by-any-push.md)).
+
+    ЗАМЕР 17.09.2026, РАДИ КОТОРОГО ЗАПРЕТ И ЗАВЕДЁН: за ОДНУ смену слияние
+    прошло под ногами ЧЕТЫРЕ раза, и прежний сторож не отверг ни одного — во
+    всех четырёх голова стояла на той же ветке, в которую шёл толчок, то есть
+    оба прежних запрета проходили. Один случай из четырёх нашёл ВЛАДЕЛЕЦ, а не
+    механизм. Следствия наблюдались оба: продолжение переписало запись журнала
+    уже слитого изменения, а конфликт истории выглядел конфликтом содержимого —
+    диф в четыре файла вместо одного.
+
+    ПРИЗНАК ОДИН И ЛОКАЛЬНЫЙ: слежение за ОДНОИМЁННОЙ веткой
+    (`branch.<имя>.merge` указывает на неё же — так его ставит `push -u`), а
+    ссылки `origin/<имя>` больше нет. Первое означает «ветку толкали», второе —
+    «площадка её убрала»; вместе это и есть слияние. Сети признак не требует:
+    сторож живёт перед git и своего окружения не имеет.
+
+    ВТОРОЙ ПРИЗНАК БЫЛ И СНЯТ ПО ЗАМЕРУ — подробности у самой проверки ниже.
+    Что он НЕ вернулся, держит прогон, а не эта строка:
+    `tests/test_push_guard.py::test_the_reachability_sign_is_not_back`.
+
+    ЦЕНА НАЗВАНА: признак читает ЛОКАЛЬНЫЕ ссылки — обе его половины, — и после
+    слияния они устаревают до первого `git fetch`. То есть сторож ловит случай, когда окно
+    уже видело слияние, — а это и есть наблюдавшийся случай: ветку удаляет
+    площадка при слиянии, и окно узнаёт об этом ближайшим фетчем. Толчок сразу
+    после слияния, без единого фетча, пройдёт, и это названный предел, а не
+    полнота
+    ([046](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/046-name-the-gaps-do-not-level-them.md)).
+    """
+    if not branch or branch == "HEAD":
+        return ""
+    tracked = git("config", "--get", f"branch.{branch}.merge", where=where)
+    gone = git(
+        "rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{branch}", where=where
+    )
+    # НЕ ПРОВЕРЕНО — НЕ ПУЩУ: тот же ответ, что у неузнанной головы (045).
+    # Две проверки, а не цикл: сужение типа mypy через цикл не переносит.
+    if isinstance(tracked, str):
+        return f"сторож не проверил, не слита ли ветка «{cut(branch)}», — {tracked}"
+    if isinstance(gone, str):
+        return f"сторож не проверил, не слита ли ветка «{cut(branch)}», — {gone}"
+    # UPSTREAM ОБЯЗАН УКАЗЫВАТЬ НА САМУ ЭТУ ВЕТКУ, А НЕ ПРОСТО СУЩЕСТВОВАТЬ.
+    # `git checkout -b <новая> origin/main` — процедура свода — оставляет
+    # `branch.<новая>.merge = refs/heads/main`: git настраивает слежение за той
+    # веткой, ОТ КОТОРОЙ отрезали. Ссылки `origin/<новая>` при этом нет, потому
+    # что ветки на площадке ещё нет вовсе, и первая редакция отвергала ПЕРВЫЙ
+    # толчок новой ветки как воскрешение слитой. Признак «удалили после
+    # слияния» другой: слежение стоит за ОДНОИМЁННОЙ веткой — так его ставит
+    # `push -u`, — а ссылки больше нет.
+    # ОБЕ ПОЛОВИНЫ ПРИЗНАКА ТРЕБУЮТ, ЧТОБЫ ВЕТКУ УЖЕ ТОЛКАЛИ, и это не
+    # осторожность, а предмет: воскресить можно лишь то, что на площадке было.
+    # Слежение за ОДНОИМЁННОЙ веткой ставит `push -u` — значит оно и есть след
+    # толчка. Признак здесь ОДИН; «оба» относится к его половинам, а не к двум
+    # признакам: второй снят по замеру, и путать их — значит читать этот разбор
+    # как описание снятого.
+    pushed = (
+        tracked.returncode == 0 and tracked.stdout.strip() == f"{REF_PREFIX}{branch}"
+    )
+    if not pushed:
+        return ""
+    if gone.returncode != 0:
+        return (
+            f"ветку «{cut(branch)}» площадка удалила — так она поступает при слиянии. Толчок "
+            "воскресит её вместе с коммитами, которых нет в общей ветке (202). Продолжение "
+            f"идёт с НОВОЙ ветки: git fetch origin <общая> && git checkout -b "
+            f"{AGENT_PREFIX}<новая> origin/<общая>"
+        )
+    # ВТОРОГО ПРИЗНАКА ЗДЕСЬ БОЛЬШЕ НЕТ, И ЭТО СНЯТИЕ ПО ЗАМЕРУ, А НЕ УПРОЩЕНИЕ.
+    # Он спрашивал «голова достижима из origin/main» и говорил «работа слита».
+    # Замер 18.09.2026 по 147 живым веткам дерева: при слиянии УПЛОТНЕНИЕМ
+    # (решение 006) голова ветки из общей НЕ достижима — 58 из 60 проверенных, —
+    # то есть у нашего способа слияния признак не срабатывает почти никогда.
+    # Достижимыми оказались ровно ветки с НУЛЁМ своих коммитов, то есть
+    # сброшенные на общую, и три из четырёх ловил первый признак. Вклад второго
+    # сверх первого — НОЛЬ находок из 147, а сообщение его при этом утверждало
+    # «работа слита», когда работы там не было вовсе
+    # ([170](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/170-green-on-a-forgery-is-a-hypothesis-too.md)).
+    #
+    # ЧЕГО ПЕРВЫЙ ПРИЗНАК НЕ ЛОВИТ, названо здесь: ветку, которую толкали БЕЗ
+    # `-u`, — слежения за собой у неё нет, и её исчезновение с площадки сторож
+    # не увидит. В этом окне таких одна из 147; появятся чаще — признак придётся
+    # искать другой, и повод будет замерен, а не выдуман
+    # ([046](https://github.com/ArtVsMark/Engineering-Incidents-Playbook/blob/main/rules/ru/046-name-the-gaps-do-not-level-them.md)).
+    return ""
+
+
+def main() -> int:
+    """Точка входа: читает событие, решает, пускать ли команду."""
+    global started
+    started = time.monotonic()
+    try:
+        return run()
+    finally:
+        # ЗАХОД КОНЧИЛСЯ — ОТСЧЁТ СНЯТ (взгляд на #1454). Модуль живёт дольше
+        # захода только в наборе тестов, и там прошлый `main()` иначе оставлял
+        # бы следующему вызову бюджет, тающий с чужого начала.
+        started = None
+
+
+def run() -> int:
+    """Заход внутри бюджета: событие → решение; сбой судейства на толчке — отказ."""
+    try:
+        event = json.load(sys.stdin)
+    except json.JSONDecodeError, ValueError:
+        # Событие не разобралось — сторож молчит: ронять чужой инструмент из-за
+        # своего разбора хуже, чем пропустить одну команду (084).
+        return 0
+    command = ""
+    try:
+        # СОБЫТИЕ ЧИТАЕТСЯ ВНУТРИ ПЕРЕХВАТА (находка `74fb515`): событие не
+        # словарь (`[1]`) или `tool_input` списком роняли `.get` трейсбеком с
+        # кодом 1 — неблокирующим, ровно тем, от чего перехват закрывает.
+        # Нечитаемое событие — то же, что неразобранный JSON выше: команды не
+        # видно, и сторож молчит (084).
+        tool = event.get("tool_input") if isinstance(event, dict) else None
+        command = str((tool.get("command") if isinstance(tool, dict) else None) or "")
+        start = event.get("cwd") if isinstance(event, dict) else None
+        return judge(command, start if isinstance(start, str) else "")
+    except Exception as exc:  # noqa: BLE001 — сбой судейства на толчке — отказ, причина ниже
+        # СБОЙ СУДЕЙСТВА НА ТОЛЧКЕ — ОТКАЗ, А НЕ КОД 1 (взгляд на #1454, 195).
+        # Трейсбек с кодом 1 площадка считает НЕблокирующей ошибкой, и толчок
+        # прошёл бы без проверки — тот же исход, что у отказа git выше. Прочую
+        # команду сторож по-прежнему не роняет (084).
+        if not maybe_push(command):
+            return 0
+        print(
+            f"Толчок отвергнут до вызова git: сторож упал, не досудив команду ({cut(repr(exc))}), и "
+            "толчок не проверил. Причина — в разборе, в вызове git или в сверке ветки; "
+            "перепишите команду проще или почините сторожа.",
+            file=sys.stderr,
+        )
+        return 2
+
+
+#: Всё, кроме латинских букв: признак толчка при сбое ищет слово среди ОДНИХ
+#: букв команды (`maybe_push`).
+NOT_A_LETTER: Final = re.compile(r"[^a-z]")
+
+
+def maybe_push(command: str) -> bool:
+    """Признак толчка при сбое судейства — ШИРЕ разбора по построению, а не по формам.
+
+    КЛАСС, А НЕ ПЕРЕЧЕНЬ (находки `d256792`, `662c08e`, `a9ebaae`, правило 210).
+    Голая подстрока `push` была уже разбора (`git p"u"sh`), а перечень снятых
+    знаков повторял разбор вручную и отстал от него сразу: `$` перед кавычкой
+    (`git pu$'s'h`) разбор снимает, а перечень нет. Здесь слово ищется среди
+    одних букв команды без регистра: что бы разбор ни снимал между буквами,
+    это не буква, и признак видит толчок в любой такой форме. Шире он
+    нарочно: лишний отказ при упавшем стороже дешевле пропущенного толчка.
+    """
+    return "push" in NOT_A_LETTER.sub("", command.lower())
+
+
+def judge(command: str, start: str = "") -> int:
+    """Решение по разобранной команде: 0 — пускать, 2 — отказ с причиной в stderr."""
+    look = push_targets(command, start)
+    if look.blind:
+        # РАЗБОР, НЕ ДОШЕДШИЙ ДО КОНЦА, НЕ МАШЕТ РУКОЙ. Сторож не знает, толчок
+        # перед ним или нет, и «не знаю» здесь обязано значить «не пущу» — как
+        # и у неузнанной головы ниже. Толчок необратим, цена уже оплачена
+        # (#116), а команду можно переписать проще.
+        print(
+            f"Толчок отвергнут до вызова git: {look.blind}. Сторож не смог "
+            "разобрать команду, а значит и не проверил её — перепишите проще.",
+            file=sys.stderr,
+        )
+        return 2
+    if not look.push:
+        return 0
+    targets = list(look.targets)
+    current, broken = head(look.where)
+    if not targets:
+        # ТОЛЧОК БЕЗ ЦЕЛИ ТОЛКАЕТ ГОЛОВУ, и проверяется он как толчок головы
+        # (взгляд на #1226). Прежде он проходил, не дойдя до проверок: окно на
+        # `main` или `claude/…` писало командой `git push` в свою ветку мимо
+        # строгого правила. При `push.default=simple` git толкает текущую ветку
+        # под её же именем — его и судим, а неузнанная голова — отказ.
+        if broken:
+            print(
+                "Толчок отвергнут до вызова git: толчок без цели толкает голову, а "
+                f"сторож не смог её узнать — {broken}. Назовите ветку явно.",
+                file=sys.stderr,
+            )
+            return 2
+        targets = [current]
+    # ЗАПРЕТ НА ВЕТКУ БЕЗ ПРИСТАВКИ ГОЛОВЫ НЕ ТРЕБУЕТ, и спрашивается он первым:
+    # его причина точнее, чем «сторож ослеп», и читателю нужна именно она (154).
+    foreign = refused(targets, "")
+    if foreign:
+        print(f"Толчок отвергнут до вызова git: {foreign}", file=sys.stderr)
+        return 2
+    for target in targets:
+        revived = merged_away(branch_of(target), look.where)
+        if revived:
+            print(f"Толчок отвергнут до вызова git: {revived}", file=sys.stderr)
+            return 2
+    if broken:
+        # СТОРОЖ, КОТОРЫЙ НЕ СМОГ ПРОВЕРИТЬ, НЕ МАШЕТ РУКОЙ. Толчок необратим:
+        # отправленную ветку окно удалить не может, и цена этого уже оплачена
+        # (#116, воскрешённая ветка после слияния). Пропустить здесь значило бы
+        # завести тихий запасной ответ ровно в том месте, ради которого сторож
+        # и стоит (045).
+        print(
+            "Толчок отвергнут до вызова git: сторож не смог узнать текущую ветку — "
+            f"{broken}. Проверка «толчок мимо своей ветки» не выполнена, а не пройдена. "
+            "Почините git в этом каталоге и повторите.",
+            file=sys.stderr,
+        )
+        return 2
+    why = refused(targets, current)
+    if not why:
+        return 0
+    print(f"Толчок отвергнут до вызова git: {why}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

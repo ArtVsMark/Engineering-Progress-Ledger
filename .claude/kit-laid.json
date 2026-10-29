@@ -1,0 +1,30 @@
+{
+  "_license": "SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms",
+  "_": "Перечень положенного заходом подключения механизмов: путь → имя git-объекта текста, положенного последним (без строки лицензии). По нему обновление узнаёт неправленую копию. Руками не правится; удалённый — обновление судит по истории поставщика, как прежде.",
+  "laid": {
+    ".claude/hooks/bundle_hint.py": "9d610e484aa26cbcc4469cefddd8c32f7faa5f54",
+    ".claude/hooks/bundle_hint.sh": "b98f902bdfc04484feb64a54bc5af97c89c3385b",
+    ".claude/hooks/install_floor.sh": "73ab25407bf432c2ccd3c2bc0c4ff1b7a0e656fa",
+    ".claude/hooks/push_guard.py": "dab5fec507377bd0310992df369ea42c5cee4856",
+    ".claude/hooks/push_guard.sh": "ab261e9940c9878760b795df4e4046af2a3f35f0",
+    ".claude/hooks/skill_log.py": "31abe4a7c0c7a1d93c2372c94b857d40eb3fed5a",
+    ".claude/hooks/skill_log.sh": "f63fef803f6f58b2ec07d373c501cad035870568",
+    ".claude/skills/a-gate-obeys-every-rule/SKILL.md": "b7fbc30fcfd952050026e339fd32745f88030e18",
+    ".claude/skills/a-task-before-the-work/SKILL.md": "bcc2e84b94ddf0407a647587b6051a79faa569b5",
+    ".claude/skills/answer-a-rule/SKILL.md": "7e16acc1c0c6018405b1535c710dda6b87e67897",
+    ".claude/skills/audit-the-answers/SKILL.md": "08ce75d3afcc7943848a8845ff2e795106da988d",
+    ".claude/skills/build-a-gate/SKILL.md": "90608d706807ffcec6c992934c2fe52d4ea29b31",
+    ".claude/skills/bundle-the-work/SKILL.md": "96e7cdc4a5690afbbd69940e9ce8a84548625835",
+    ".claude/skills/close-a-finding/SKILL.md": "ecae9cb8ce967e723458a4f25006baed0d2a6e46",
+    ".claude/skills/direction-coverage/SKILL.md": "0ff11102feb83f8ec5ce22d73f5e7d7d2177e19a",
+    ".claude/skills/propose-a-rule/SKILL.md": "d0c3d71ae06c8fe435cae06cd6eb29cd91b99ab9",
+    ".claude/skills/restart-the-window/SKILL.md": "c5c52ff6f97411249542d68437d74313c5ea44c4",
+    ".claude/skills/retell-from-the-source/SKILL.md": "8c260034c8d480699e3abfc4e5a1adad1dd28e8d",
+    ".claude/skills/role-profile/SKILL.md": "0a76961e564ea089cf3c1292fd16148b58632e50",
+    ".claude/skills/rulebook-keeps-how-to-work/SKILL.md": "70763a01d5c86526c39b30eeab826305bd7a2955",
+    ".claude/skills/rulebook-reread/SKILL.md": "04baa1f2acccd58525768ebcdb2f6d956f682856",
+    ".claude/skills/tell-the-supplier/SKILL.md": "4108a630c8433c9efae69486c8cfb8337ba699bc",
+    ".claude/skills/what-the-graph-misses/SKILL.md": "4042febc8404b9469bf69faf4ff8754d0800201f",
+    ".claude/skills/work-the-plan/SKILL.md": "ae36ed47a2c209d76cc7ba659626af5977a74641"
+  }
+}

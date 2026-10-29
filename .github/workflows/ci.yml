@@ -1,0 +1,99 @@
+# Тонкий вызов шагов конвейера: собран `scripts/onboard.py` поставщика.
+# Что проверяется — эти вызовы; класс каждой проверки — `.pipeline.yml`.
+# Сверяет одно с другим шаг `pipeline`: правьте оба вместе.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  attribution:
+    name: attribution
+    if: github.event_name != 'push'
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-attribution.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  debt:
+    name: debt
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-debt.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  journal:
+    name: journal
+    if: github.event_name != 'push'
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-journal.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  lint:
+    name: lint
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-lint.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  pipeline:
+    name: pipeline
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-pipeline.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  pr-meta:
+    name: pr-meta
+    if: github.event_name != 'push'
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-pr-meta.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  rulebook-fresh:
+    name: rulebook-fresh
+    if: github.event_name != 'push'
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-rulebook-fresh.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read
+
+  window-lifetime:
+    name: window-lifetime
+    if: github.event_name != 'push'
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-window-lifetime.yml@v1.13.0
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      issues: read

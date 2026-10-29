@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: MIT — https://github.com/ArtVsMark/Engineering-Pipeline-Mechanisms
+schema: 4
+contract: ">=0.14,<0.15"
+
+checks:
+  "attribution / attribution": required
+  "debt / debt":
+    class: advisory
+    why: "остаток долга слияния не держит, но виден на каждом изменении"
+    addressee: none
+  "journal / journal":
+    class: off
+    why: "выпусков у журнала нет: запись о снимке — строка таблицы README и сам снимок, отдельный журнал изменений вёл бы второй список того же"
+  "lint / lint":
+    class: off
+    why: "своего кода на Python в журнале нет: журнал хранит HTML-снимки, а хуки окна, положенные заходом, судит поставщик своим линтом"
+  "pipeline / pipeline": required
+  "pr-meta / pr-meta": required
+  "rulebook-fresh / rulebook-fresh": required
+  "window-lifetime / window-lifetime": required
+  "automerge / automerge":
+    class: advisory
+    why: "это само слияние, а не проверка перед ним"
+    addressee: none
+  "review / map":
+    class: advisory
+    why: "собирает карту для взгляда; не собралась — взгляд идёт без неё"
+    addressee: none
+  "review / review":
+    class: advisory
+    why: "внешний взгляд слияния не держит, находки живут в реестре находок"
+    addressee: none
+  "review / findings":
+    class: advisory
+    why: "запись находок слияния не держит"
+    addressee: none
+  "review / sweep":
+    class: advisory
+    why: "снимает с реестра разобранное по слитым изменениям; на голове изменения предмета нет"
+    addressee: none
+  "review / verify":
+    class: advisory
+    why: "проверяет премису одной находки по кнопке; слияния не касается"
+    addressee: none
+  "review / late-queue":
+    class: advisory
+    why: "очередь позднего взгляда по слитому; на голове изменения предмета нет"
+    addressee: none
+  "review / late-look":
+    class: advisory
+    why: "поздний взгляд идёт по слитому, а не на изменении"
+    addressee: none
+  "record / skills":
+    class: advisory
+    why: "запись вызовов навыков окна слияния не держит"
+    addressee: none
+  "digest / skills":
+    class: advisory
+    why: "сводка навыков идёт по расписанию, а не на изменении"
+    addressee: none
+  "task-items / task-items":
+    class: advisory
+    why: "разбор пунктов задачи слияния не держит"
+    addressee: none
+beyond_the_change:
+  "agent-pr / agent-pr": unreviewed
+  "attribution-history / attribution-history": unreviewed
+  "ci-complete-wake / ci-complete-wake": unreviewed
+  "respond / respond": unreviewed
+  "intercept / intercept": unreviewed
+  "drift / drift": unreviewed
+  "facts / facts": unreviewed
+  "hail / hail": unreviewed
+  "apply / apply": unreviewed
+  "main-red / main-red": unreviewed
+  "test-next / test-next": unreviewed
+  "release / release": unreviewed
+  "compare / compare": unreviewed
+  "runs-series / runs-series": unreviewed
+  "schedules-seen / schedules-seen": unreviewed
+  "stuck-prs / stuck-prs": unreviewed
+  "verify-queue / verify-queue": unreviewed
+  "work-plan / work-plan": unreviewed
+
+# Что механизм поставщика сделал у вас не так — записью, а не прозой в трекере
+# (навык `tell-the-supplier`, форма — договор поставщика, раздел `feedback:`).
+# feedback:
+#   version: 1
+#   records:
+#     - slug: <устойчивое-имя>
+#       mechanism: <step-…, scripts/….py или .claude/…>
+#       version: <тег выпуска поставщика, vX.Y.Z>
+#       kind: <false-refusal | false-pass | not-run | partial | rework | bypass>
+#       measured: <что видно и сколько раз>
+#       trace: <владелец/репозиторий#N — ваша задача>
+#       supplier: <владелец/репозиторий — только если механизм не этого поставщика>
