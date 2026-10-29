@@ -85,13 +85,30 @@ beyond_the_change:
 
 # Что механизм поставщика сделал у вас не так — записью, а не прозой в трекере
 # (навык `tell-the-supplier`, форма — договор поставщика, раздел `feedback:`).
-# feedback:
-#   version: 1
-#   records:
-#     - slug: <устойчивое-имя>
-#       mechanism: <step-…, scripts/….py или .claude/…>
-#       version: <тег выпуска поставщика, vX.Y.Z>
-#       kind: <false-refusal | false-pass | not-run | partial | rework | bypass>
-#       measured: <что видно и сколько раз>
-#       trace: <владелец/репозиторий#N — ваша задача>
-#       supplier: <владелец/репозиторий — только если механизм не этого поставщика>
+feedback:
+  version: 1
+  records:
+    - slug: floor-without-pyyaml
+      mechanism: .claude/hooks/install_floor.sh
+      version: v1.13.0
+      kind: rework
+      measured: "запускатель `.claude/mechanisms.sh` требует от интерпретатора планки `pyyaml`, а установка ставит `python3.14` без него: в облачном окне журнала 29.10.2026 `bash .claude/mechanisms.sh paths.py roles` падает `ModuleNotFoundError: yaml`, с системным `python3` 3.13 — `SyntaxError` (PEP 758); журнал собрал окружение планки с `pyyaml` слотом своего `session-start.sh`"
+      trace: ArtVsMark/Engineering-Progress-Ledger#20
+    - slug: preflight-bare-python
+      mechanism: scripts/preflight.py
+      version: v1.13.0
+      kind: false-refusal
+      measured: "предполётная ставит первой в `PATH` папку интерпретатора `PYTHON` и зовёт блоки шагов голым `python`; при `PYTHON=python3.14` из `/usr/local/bin`, где `python` — системный 3.13, шаги краснеют `SyntaxError: multiple exception types must be parenthesized` (замер окна EPL 29.10.2026: 16 красных и 14 строк `SyntaxError` против 3 красных выключенных проверок в venv планки); журнал обходит venv планки в слоте `session-start.sh`; у поставщика — EPM #1767"
+      trace: ArtVsMark/Engineering-Progress-Ledger#20
+    - slug: schedules-seen-cron-forms
+      mechanism: scripts/schedules_seen.py
+      version: v1.13.0
+      kind: partial
+      measured: "`expected_between` не разбирает 3 из 8 кронов прогонов журнала — `41 5,17 * * *` (список часов), `37 5 * * 1` и `29 6 * * 1` (день недели) — и отвечает `NotRun`, а обход идёт по всем объявленным и падает на первом; поэтому `.rules/schedules.json` журнал не заводит; у поставщика — EPM #1768"
+      trace: ArtVsMark/Engineering-Progress-Ledger#20
+    - slug: kit-without-gitignore
+      mechanism: scripts/onboard.py
+      version: v1.13.0
+      kind: rework
+      measured: "хук `.claude/hooks/skill_log.sh` (код — `skill_log.py`) пишет `.claude/state/skill-runs.jsonl`, по своей докстроке — под `.gitignore`, а заход подключения `.gitignore` не кладёт: после первого вызова навыка в дереве журнала появился неотслеживаемый файл, и стоп-хук окна требовал его закоммитить; журнал завёл `.gitignore` сам; у поставщика — EPM #1769"
+      trace: ArtVsMark/Engineering-Progress-Ledger#20

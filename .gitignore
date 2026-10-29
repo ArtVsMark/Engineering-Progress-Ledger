@@ -1,0 +1,4 @@
+# Данные окна, а не дерева: журнал вызовов навыков пишет хук окна
+# (`.claude/hooks/skill_log.sh`, код — `skill_log.py`) в `.claude/state/skill-runs.jsonl`,
+# и по докстроке хука он лежит под `.gitignore`.
+.claude/state/
