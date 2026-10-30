@@ -80,7 +80,7 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.16"]
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-python-next.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-python-next.yml@v1.14.0
     # УСТАНОВКА И НАБОР — ДАННЫЕ ПРОЕКТА: заготовка подключения кладёт этот
     # файл потребителю как есть, и свои `install` и `test` он ставит сам.
     # Транспорт берётся из выкачки механизмов (`$MECHANISMS`), а не из

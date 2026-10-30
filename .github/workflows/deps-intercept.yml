@@ -37,6 +37,6 @@ concurrency:
 
 jobs:
   intercept:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-deps-intercept.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-deps-intercept.yml@v1.14.0
     secrets:
       MERGE_QUEUE_TOKEN: ${{ secrets.MERGE_QUEUE_TOKEN }}

@@ -46,7 +46,7 @@ jobs:
   # конвейера шаг берёт своим checkout на коммите вызова (#990), поэтому
   # потребитель зовёт его адресом с тегом, а не копирует.
   stuck-prs:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-stuck.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-stuck.yml@v1.14.0
     # СЕКРЕТ ПЕРЕДАЁТСЯ ПО ИМЕНИ, А НЕ `secrets: inherit`. Шаг получает ровно
     # тот секрет, которым работает, и ни одного сверх того (108): унаследовав
     # все, он держал бы в окружении всё, что проект когда-либо заведёт, — тот

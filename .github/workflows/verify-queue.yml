@@ -42,4 +42,4 @@ jobs:
   # только то, что решает проект, — когда звать и один ли заход. Код конвейера
   # шаг берёт своим checkout на коммите вызова (#990).
   verify-queue:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-verify-queue.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-verify-queue.yml@v1.14.0

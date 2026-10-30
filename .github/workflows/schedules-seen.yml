@@ -40,4 +40,4 @@ jobs:
   # проверки составное: `schedules-seen / schedules-seen`.
   schedules-seen:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_branch == 'main'
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-schedules-seen.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-schedules-seen.yml@v1.14.0

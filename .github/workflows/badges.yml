@@ -33,7 +33,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   facts:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-facts.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-facts.yml@v1.14.0
     permissions:
       contents: write
       actions: read

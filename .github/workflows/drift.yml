@@ -53,7 +53,7 @@ jobs:
   # берёт своим checkout на коммите вызова (#990), поэтому потребитель зовёт
   # его адресом с тегом, а не копирует.
   drift:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-drift.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-drift.yml@v1.14.0
     # СЕКРЕТ ПЕРЕДАЁТСЯ ПО ИМЕНИ, А НЕ `secrets: inherit` (108): шаг получает
     # ровно тот секрет, которым работает, — и внутри шага его получает один
     # шаг чтения настроек слияния, а не весь заход.

@@ -27,6 +27,6 @@ jobs:
   # ТОНКИЙ ВЫЗОВ (#1385): сверка — общим шагом `step-required-context.yml`,
   # кнопка — здесь. Имя записи проверки составное: `compare / compare`.
   compare:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-required-context.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-required-context.yml@v1.14.0
     secrets:
       MERGE_QUEUE_TOKEN: ${{ secrets.MERGE_QUEUE_TOKEN }}

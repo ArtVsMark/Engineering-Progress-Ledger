@@ -63,4 +63,4 @@ jobs:
       # внутренним путём `./`, у потребителя — адресом с тегом выпуска: эту
       # строку при раскладке меняет `scripts/onboard.py`.
       - name: опросить проверки на голове
-        uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/actions/ci-complete@v1.13.0
+        uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/actions/ci-complete@v1.14.0
