@@ -2,12 +2,12 @@
   "schema": "2.2",
   "schema_of": "договор фактов семьи ArtVsMark/Engineering-Pipeline-Mechanisms — export/facts/facts-contract.md",
   "repo": "ArtVsMark/Engineering-Progress-Ledger",
-  "generated_at": "2026-10-30T05:43:28+00:00",
-  "commit": "4d74b00b8ce07480028c808a72f7198a9d872ee5",
+  "generated_at": "2026-10-30T05:57:09+00:00",
+  "commit": "a50204c9de93cb3680a4ffabe1579648dffab3e4",
   "ci": {
     "workflow": "ci.yml"
   },
-  "version": "0.0.14",
+  "version": "0.0.15",
   "none": {
     "checks_per_pr": "проект не отдал показатель во входе extra-facts общего шага step-facts",
     "coverage_percent": "отчёт покрытия этого прогона не прочитан — доля не мерилась, а не равна нулю",
