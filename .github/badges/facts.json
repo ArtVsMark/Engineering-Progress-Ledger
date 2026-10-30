@@ -1,0 +1,28 @@
+{
+  "schema": "2.2",
+  "schema_of": "договор фактов семьи ArtVsMark/Engineering-Pipeline-Mechanisms — export/facts/facts-contract.md",
+  "repo": "ArtVsMark/Engineering-Progress-Ledger",
+  "generated_at": "2026-10-30T05:42:40+00:00",
+  "commit": "4d74b00b8ce07480028c808a72f7198a9d872ee5",
+  "ci": {
+    "workflow": "ci.yml"
+  },
+  "version": "0.0.14",
+  "none": {
+    "checks_per_pr": "проект не отдал показатель во входе extra-facts общего шага step-facts",
+    "coverage_percent": "отчёт покрытия этого прогона не прочитан — доля не мерилась, а не равна нулю",
+    "python": "в ci.yml нет джоба «test-matrix» — матрицы версий Python у проекта нет",
+    "release": "выпусков нет: тега выпуска в дереве нет",
+    "tests": "проект не отдал показатель во входе extra-facts общего шага step-facts"
+  },
+  "exchange": {
+    "steps": {
+      "schema": "1.0",
+      "schema_of": "общий шаг фактов механизмов: детали покрытия и полнота версии",
+      "coverage": {
+        "read": false
+      },
+      "version_whole": false
+    }
+  }
+}
