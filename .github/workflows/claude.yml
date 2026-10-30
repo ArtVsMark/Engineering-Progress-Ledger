@@ -57,6 +57,6 @@ jobs:
     # ТОНКИЙ ВЫЗОВ (#1385): ответ — общим шагом `step-claude.yml`, а события,
     # очередь и «кто вправе обратиться» — здесь. Имя записи составное:
     # `respond / respond`.
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-claude.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-claude.yml@v1.14.0
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

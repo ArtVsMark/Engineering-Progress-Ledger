@@ -4,9 +4,9 @@
   "laid": {
     ".claude/hooks/bundle_hint.py": "9d610e484aa26cbcc4469cefddd8c32f7faa5f54",
     ".claude/hooks/bundle_hint.sh": "b98f902bdfc04484feb64a54bc5af97c89c3385b",
-    ".claude/hooks/install_floor.sh": "73ab25407bf432c2ccd3c2bc0c4ff1b7a0e656fa",
+    ".claude/hooks/install_floor.sh": "8c1a0b03585fe6351f83cfb16f2b15c144fb1075",
     ".claude/hooks/push_guard.py": "dab5fec507377bd0310992df369ea42c5cee4856",
-    ".claude/hooks/push_guard.sh": "ab261e9940c9878760b795df4e4046af2a3f35f0",
+    ".claude/hooks/push_guard.sh": "ea5dfd923cac0f46e35943159ee6a9f404cb3884",
     ".claude/hooks/skill_log.py": "31abe4a7c0c7a1d93c2372c94b857d40eb3fed5a",
     ".claude/hooks/skill_log.sh": "f63fef803f6f58b2ec07d373c501cad035870568",
     ".claude/skills/a-gate-obeys-every-rule/SKILL.md": "b7fbc30fcfd952050026e339fd32745f88030e18",

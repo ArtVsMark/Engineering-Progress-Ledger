@@ -33,4 +33,4 @@ jobs:
   # ТОНКИЙ ВЫЗОВ (#1385): применение — общим шагом `step-labels-sync.yml`, а
   # события и очередь — здесь. Имя записи проверки составное: `apply / apply`.
   apply:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-labels-sync.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-labels-sync.yml@v1.14.0

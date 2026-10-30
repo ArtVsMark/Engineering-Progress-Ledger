@@ -38,4 +38,4 @@ jobs:
   # расписание и очередь — здесь. Имя записи проверки составное:
   # `runs-series / runs-series`.
   runs-series:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-runs-series.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-runs-series.yml@v1.14.0

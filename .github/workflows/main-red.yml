@@ -83,4 +83,4 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.head_branch == 'main'
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-main-red.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-main-red.yml@v1.14.0

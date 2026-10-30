@@ -112,7 +112,7 @@ jobs:
   # у поставщика; форку, который правит сам взгляд, вызов надо перенаправить
   # на себя одной строкой.
   review:
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-review.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-review.yml@v1.14.0
     with:
       pr: ${{ inputs.pr || '' }}
       mark: ${{ inputs.mark || '' }}

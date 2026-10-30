@@ -52,6 +52,6 @@ jobs:
     # ТОНКИЙ ВЫЗОВ (#1385): перезапуск — общим шагом `step-ci-complete-wake.yml`,
     # а событие, очередь и условие — здесь. Имя записи проверки составное:
     # `ci-complete-wake / ci-complete-wake`.
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-ci-complete-wake.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-ci-complete-wake.yml@v1.14.0
     with:
       sha: ${{ inputs.sha || '' }}

@@ -73,7 +73,7 @@ jobs:
     concurrency:
       group: task-items
       cancel-in-progress: false
-    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-task-items.yml@v1.13.0
+    uses: ArtVsMark/Engineering-Pipeline-Mechanisms/.github/workflows/step-task-items.yml@v1.14.0
     with:
       pr: ${{ inputs.pr || '' }}
     # СЕКРЕТ ПЕРЕДАЁТСЯ ПО ИМЕНИ, А НЕ `secrets: inherit` (108).
