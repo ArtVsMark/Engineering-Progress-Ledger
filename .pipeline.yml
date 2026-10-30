@@ -94,6 +94,12 @@ feedback:
       kind: rework
       measured: "запускатель `.claude/mechanisms.sh` требует от интерпретатора планки `pyyaml`, а установка ставит `python3.14` без него: в облачном окне журнала 29.10.2026 `bash .claude/mechanisms.sh paths.py roles` падает `ModuleNotFoundError: yaml`, с системным `python3` 3.13 — `SyntaxError` (PEP 758); журнал собрал окружение планки с `pyyaml` слотом своего `session-start.sh`; у поставщика — ArtVsMark/Engineering-Pipeline-Mechanisms#1771"
       trace: ArtVsMark/Engineering-Progress-Ledger#20
+    - slug: labels-description-limit
+      mechanism: scripts/labels.py
+      version: v1.14.0
+      kind: false-pass
+      measured: "разбор `.github/labels.yml` не проверяет предел площадки на длину описания метки (100 знаков): у журнала описание `area/core` было 110 знаков, гейты изменения EPL #29 зелёные, а `labels-sync` (`apply / apply`) падал `PATCH …/labels/area%2Fcore → 422` на каждом толчке в `main` с 29.10.2026 по 30.10.2026 (прогоны 40906438867, 41009920613)"
+      trace: ArtVsMark/Engineering-Progress-Ledger#22
     - slug: version-file-collision
       mechanism: scripts/pipeline_checks.py
       version: v1.13.0
