@@ -2,7 +2,7 @@
   "_": "Ряд прогонов конвейера: день → прогон → числа. Ведёт scripts/runs_series.py.",
   "window_days": 90,
   "recount_days": 3,
-  "updated": "2026-11-09T12:44:56+00:00",
+  "updated": "2026-11-10T12:29:44+00:00",
   "days": {
     "2026-10-29": {
       "runs": {
@@ -2107,6 +2107,177 @@
     },
     "2026-11-09": {
       "runs": {
+        "hail": {
+          "runs": 3,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 41,
+          "timed": 3,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify-queue": {
+          "runs": 2,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 42,
+          "timed": 2,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "automerge": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 16,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "work-plan": {
+          "runs": 2,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 48,
+          "timed": 2,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "review": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 61,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify 5270d98": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 47,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify 2d5ee2f": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 1,
+          "seconds": 15,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "verify fa22acb": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 28,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "drift": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 17,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "skills": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 19,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "main-red": {
+          "runs": 3,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 160,
+          "timed": 3,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "deps-intercept": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 23,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "badges": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 33,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "python-next": {
+          "runs": 1,
+          "red": 1,
+          "cancelled": 0,
+          "seconds": 39,
+          "timed": 1,
+          "red_jobs": {
+            "test-next (3.16) / test-next": 1
+          },
+          "red_steps": {
+            "test-next (3.16) / test-next · тесты на предрелизной": 1
+          },
+          "red_marks": {},
+          "red_whose": {
+            "свой": 1
+          }
+        },
+        "runs-series": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 18,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
         "task-items": {
           "runs": 1,
           "red": 0,
@@ -2118,22 +2289,70 @@
           "red_marks": {},
           "red_whose": {}
         },
+        "github_actions in /. - Update #1688258851": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 45,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        }
+      }
+    },
+    "2026-11-10": {
+      "runs": {
+        "task-items": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 23,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
         "hail": {
           "runs": 2,
           "red": 0,
           "cancelled": 0,
-          "seconds": 27,
+          "seconds": 38,
           "timed": 2,
           "red_jobs": {},
           "red_steps": {},
           "red_marks": {},
           "red_whose": {}
         },
-        "github_actions in /. - Update #1688258851": {
+        "github_actions in /. - Update #1691921194": {
           "runs": 1,
           "red": 0,
           "cancelled": 0,
-          "seconds": 45,
+          "seconds": 53,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "main-red": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 42,
+          "timed": 1,
+          "red_jobs": {},
+          "red_steps": {},
+          "red_marks": {},
+          "red_whose": {}
+        },
+        "deps-intercept": {
+          "runs": 1,
+          "red": 0,
+          "cancelled": 0,
+          "seconds": 15,
           "timed": 1,
           "red_jobs": {},
           "red_steps": {},
